@@ -11,7 +11,6 @@ from PySide6.QtCore import Qt
 from report_explain_utils import (
     load_region_order,
     load_node_coordinates,
-    top10_nodes_from_edge_importance,
     top10_edges_from_edge_importance,
     plot_top10_nodes_bar,
     plot_top10_edges_chord,
@@ -25,7 +24,178 @@ from explainability_utils import (
 )
 import torch
 
+NODE_NAME_CN = {
+    # ===== 额叶 / Frontal =====
+    "PreCG": "中央前回",
+    "PostCG": "中央后回",
+    "PoCG": "中央后回",
 
+    "SFG": "额上回",
+    "SFGmed": "内侧额上回",
+    "SFGdor": "额上回背外侧部",
+
+    "MFG": "额中回",
+
+    "IFG": "额下回",
+    "IFGoperc": "额下回盖部",
+    "IFGtriang": "额下回三角部",
+    "IFGorb": "额下回眶部",
+
+    "ROL": "Rolandic盖区",
+    "SMA": "辅助运动区",
+    "OLF": "嗅皮层",
+
+    "ORBsup": "眶额上回",
+    "ORBsupmed": "眶额上内侧回",
+    "ORBmid": "眶额中回",
+    "ORBinf": "眶额下回",
+    "REC": "直回",
+
+    # ===== 岛叶 / 扣带回 / Insula & Cingulate =====
+    "INS": "岛叶",
+    "ACG": "前扣带回",
+    "DCG": "中扣带回",
+    "PCG": "后扣带回",
+    "PCC": "后扣带皮层",
+    "MCC": "中扣带皮层",
+
+    # ===== 边缘系统 / Limbic =====
+    "HIP": "海马",
+    "PHG": "海马旁回",
+    "AMYG": "杏仁核",
+
+    # ===== 枕叶 / Occipital =====
+    "CAL": "距状裂周围皮层",
+    "CUN": "楔叶",
+    "LING": "舌回",
+    "SOG": "枕上回",
+    "MOG": "枕中回",
+    "IOG": "枕下回",
+    "FFG": "梭状回",
+
+    # ===== 顶叶 / Parietal =====
+    "SPG": "顶上小叶",
+    "IPL": "顶下小叶",
+    "SMG": "缘上回",
+    "ANG": "角回",
+    "PCUN": "楔前叶",
+    "PCL": "旁中央小叶",
+    "PreCUN": "楔前叶",
+
+    # ===== 颞叶 / Temporal =====
+    "HES": "Heschl回（横颞回）",
+    "STG": "颞上回",
+    "TPOsup": "颞极上部",
+    "MTG": "颞中回",
+    "TPOmid": "颞极中部",
+    "ITG": "颞下回",
+
+    # ===== 基底节 / 丘脑 / Deep nuclei =====
+    "CAU": "尾状核",
+    "PUT": "壳核",
+    "PAL": "苍白球",
+    "THA": "丘脑",
+    "NAC": "伏隔核",
+    "NAc": "伏隔核",
+
+    # ===== 小脑 / Cerebellum =====
+    "CRBLCrus1": "小脑脚I区",
+    "CRBLCrus2": "小脑脚II区",
+    "CRBL1_2": "小脑1-2区",
+    "CRBL3": "小脑3区",
+    "CRBL4_5": "小脑4/5区",
+    "CRBL6": "小脑6区",
+    "CRBL7b": "小脑7b区",
+    "CRBL8": "小脑8区",
+    "CRBL9": "小脑9区",
+    "CRBL10": "小脑10区",
+
+    # ===== 常见别名兼容 =====
+    "Cerebelum_Crus1": "小脑脚I区",
+    "Cerebelum_Crus2": "小脑小脑脚II区",
+    "Cerebelum_1_2": "小脑1-2区",
+    "Cerebelum_3": "小脑3区",
+    "Cerebelum_4_5": "小脑4/5区",
+    "Cerebelum_6": "小脑6区",
+    "Cerebelum_7b": "小脑7b区",
+    "Cerebelum_8": "小脑8区",
+    "Cerebelum_9": "小脑9区",
+    "Cerebelum_10": "小脑10区",
+
+    # ===== 另一套常见英文别名兼容（有些AAL导出会这样写） =====
+    "Precentral": "中央前回",
+    "Postcentral": "中央后回",
+    "Frontal_Sup": "额上回",
+    "Frontal_Sup_Medial": "内侧额上回",
+    "Frontal_Mid": "额中回",
+    "Frontal_Inf_Oper": "额下回盖部",
+    "Frontal_Inf_Tri": "额下回三角部",
+    "Frontal_Inf_Orb": "额下回眶部",
+    "Rolandic_Oper": "Rolandic盖区",
+    "Supp_Motor_Area": "辅助运动区",
+    "Olfactory": "嗅皮层",
+    "Frontal_Sup_Orb": "眶额上回",
+    "Frontal_Med_Orb": "眶额内侧回",
+    "Frontal_Mid_Orb": "眶额中回",
+    "Frontal_Inf_Orb_2": "眶额下回",
+    "Rectus": "直回",
+    "Insula": "岛叶",
+    "Cingulum_Ant": "前扣带回",
+    "Cingulum_Mid": "中扣带回",
+    "Cingulum_Post": "后扣带回",
+    "Hippocampus": "海马",
+    "ParaHippocampal": "海马旁回",
+    "Amygdala": "杏仁核",
+    "Calcarine": "距状裂周围皮层",
+    "Cuneus": "楔叶",
+    "Lingual": "舌回",
+    "Occipital_Sup": "枕上回",
+    "Occipital_Mid": "枕中回",
+    "Occipital_Inf": "枕下回",
+    "Fusiform": "梭状回",
+    "Parietal_Sup": "顶上小叶",
+    "Parietal_Inf": "顶下小叶",
+    "SupraMarginal": "缘上回",
+    "Angular": "角回",
+    "Precuneus": "楔前叶",
+    "Paracentral_Lobule": "旁中央小叶",
+    "Heschl": "Heschl回",
+    "Temporal_Sup": "颞上回",
+    "Temporal_Pole_Sup": "颞极上部",
+    "Temporal_Mid": "颞中回",
+    "Temporal_Pole_Mid": "颞极中部",
+    "Temporal_Inf": "颞下回",
+    "Caudate": "尾状核",
+    "Putamen": "壳核",
+    "Pallidum": "苍白球",
+    "Thalamus": "丘脑",
+    "Accumbens": "伏隔核",
+    "Vermis12": "小脑蚓部1-2区",
+    "Vermis3": "小脑蚓部3区",
+    "Vermis45": "小脑蚓部4/5区",
+    "Vermis6": "小脑蚓部6区",
+    "Vermis7": "小脑蚓部7区",
+    "Vermis8": "小脑蚓部8区",
+    "Vermis9": "小脑蚓部9区",
+    "Vermis10": "小脑蚓部10区",
+}
+
+def to_cn_region(name):
+    if not name:
+        return name
+
+    side = ""
+    base = name
+
+    if "." in name:
+        base, suffix = name.rsplit(".", 1)
+        if suffix == "L":
+            side = "左侧"
+        elif suffix == "R":
+            side = "右侧"
+
+    cn = NODE_NAME_CN.get(base, base)
+    return f"{side}{cn}" if side else cn
 class IndividualReportPage(QWidget):
     def __init__(self, main_window=None):
         super().__init__()
@@ -71,7 +241,8 @@ class IndividualReportPage(QWidget):
         self.edge_table.setHorizontalHeaderLabels(["排名", "连接", "重要性"])
         self.edge_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         group_edges_layout.addWidget(self.edge_table)
-
+        self.node_table.verticalHeader().setVisible(False)
+        self.edge_table.verticalHeader().setVisible(False)
         # 图像显示
         group_figs = QGroupBox("可视化结果")
         figs_layout = QVBoxLayout(group_figs)
@@ -177,6 +348,7 @@ class IndividualReportPage(QWidget):
             coord_map = load_node_coordinates(self.coord_file)
 
             # 7. 生成单被试 Top10 结果
+            # 7. 生成单被试 Top10 结果
             subject_stats = generate_per_subject_analysis_with_stats(
                 subject_id="current_case",
                 edge_imp=edge_imp,
@@ -187,19 +359,43 @@ class IndividualReportPage(QWidget):
                 top_k=10
             )
 
-            top_nodes = [
+            # 原始英文名：给脑图坐标匹配用
+            top_nodes_raw = [
                 (item["node_name"], float(item["importance"]), int(item["node_idx"]))
                 for item in subject_stats["top_nodes"]
             ]
+
+            top_nodes = [
+                (to_cn_region(item["node_name"]), float(item["importance"]), int(item["node_idx"]))
+                for item in subject_stats["top_nodes"]
+            ]
+
+            # Top10 连接
+            def cn_region(name):
+                if not name:
+                    return name
+
+                base = name
+                side = ""
+
+                if "." in name:
+                    base, suffix = name.rsplit(".", 1)
+                    if suffix == "L":
+                        side = "左侧"
+                    elif suffix == "R":
+                        side = "右侧"
+
+                cn = NODE_NAME_CN.get(base, base)
+                return f"{side}{cn}" if side else cn
 
             top_edges = [
                 {
                     "rank": idx + 1,
                     "i": item["i"],
                     "j": item["j"],
-                    "node1": region_names[item["i"]],
-                    "node2": region_names[item["j"]],
-                    "name": item["edge_name"],
+                    "node1": cn_region(region_names[item["i"]]),
+                    "node2": cn_region(region_names[item["j"]]),
+                    "name": f"{cn_region(region_names[item['i']])}-{cn_region(region_names[item['j']])}",
                     "score": float(item["importance"])
                 }
                 for idx, item in enumerate(subject_stats["top_edges"])
@@ -213,9 +409,8 @@ class IndividualReportPage(QWidget):
             brain_png = os.path.join(out_dir, "top10_nodes_brain.png")
 
             plot_top10_nodes_bar(top_nodes, bar_png)
-            #print("top_edges =", top_edges)
             plot_top10_edges_chord(top_edges, circle_png)
-            plot_top10_nodes_brain(top_nodes, coord_map, brain_png)
+            plot_top10_nodes_brain(top_nodes_raw, coord_map, brain_png)
 
             self.analysis_result = {
                 "edge_imp": edge_imp,
@@ -230,7 +425,6 @@ class IndividualReportPage(QWidget):
             self.fill_node_table(top_nodes)
             self.fill_edge_table(top_edges)
             self.load_images()
-
         except Exception as e:
             QMessageBox.critical(self, "分析失败", str(e))
 
