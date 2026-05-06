@@ -434,7 +434,7 @@ class ADDiagnosisSystem(QMainWindow):
 
         hero_layout = QVBoxLayout(hero_panel)
         hero_layout.setContentsMargins(26, 24, 26, 20)
-        hero_layout.setSpacing(12)
+        hero_layout.setSpacing(50)
 
         hero_tag = QLabel("基于深度学习的辅助诊断系统")
         hero_tag.setObjectName("heroTag")

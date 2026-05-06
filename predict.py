@@ -44,7 +44,7 @@ class DiagnosisPage(QWidget):
             background: white;
             border: 1px solid #E4E7ED;
             border-radius: 10px;
-            margin-top: 12px;
+            margin-top: 10px;
             font-weight: bold;
             padding-top: 12px;
         }
@@ -52,6 +52,8 @@ class DiagnosisPage(QWidget):
             subcontrol-origin: margin;
             left: 12px;
             padding: 0 4px;
+            color: white;
+            background-color: #2c3e50;
         }
         QPushButton {
             background-color: #409EFF;
