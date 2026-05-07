@@ -3,6 +3,7 @@ import os
 import shutil
 import json
 import csv
+import sys
 import nibabel as nib
 import numpy as np
 from PySide6.QtCore import QThread, Signal, Qt
@@ -73,6 +74,7 @@ class FMRIPrepThread(QThread):
         super().__init__()
         self.config = config
         self.process = None
+        self._stop_requested = False
 
     def run(self):
         try:
@@ -87,24 +89,55 @@ class FMRIPrepThread(QThread):
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
+                stdin=subprocess.PIPE,
                 text=True,
                 bufsize=1
             )
 
-            for line in iter(self.process.stdout.readline, ''):
-                if line:
-                    self.log_signal.emit(line.rstrip())
-                    if "Running subject" in line:
-                        self.progress_signal.emit(50)
-                    elif "Finished" in line:
-                        self.progress_signal.emit(90)
+            output_buffer = ""
+            while True:
+                char = self.process.stdout.read(1)
+
+                if char == "" and self.process.poll() is not None:
+                    if output_buffer.strip():
+                        self.log_signal.emit(output_buffer.rstrip())
+                    break
+
+                if not char:
+                    continue
+
+                output_buffer += char
+
+                if "Continue anyway? [y/N]" in output_buffer or "Continue anyway?" in output_buffer:
+                    if self.process.stdin:
+                        self.process.stdin.write("y\n")
+                        self.process.stdin.flush()
+                    output_buffer = output_buffer.replace("Continue anyway? [y/N]", "")
+                    output_buffer = output_buffer.replace("Continue anyway?", "")
+
+                if char == "\n":
+                    cleaned_line = output_buffer.rstrip()
+                    if cleaned_line:
+                        self.log_signal.emit(cleaned_line)
+                        if "Running subject" in cleaned_line:
+                            self.progress_signal.emit(50)
+                        elif "Finished" in cleaned_line:
+                            self.progress_signal.emit(90)
+                    output_buffer = ""
 
             self.process.wait()
+
+            if self._stop_requested:
+                self.finished_signal.emit(False, "预处理已被用户终止")
+                return
 
             if self.process.returncode == 0:
                 self.progress_signal.emit(100)
                 self.finished_signal.emit(True, "fMRIPrep 预处理完成！")
             else:
+                if self._stop_requested:
+                    self.finished_signal.emit(False, "预处理已被用户终止")
+                    return
                 self.finished_signal.emit(False, f"预处理失败，错误代码: {self.process.returncode}")
 
         except Exception as e:
@@ -114,8 +147,11 @@ class FMRIPrepThread(QThread):
         cmd = []
 
         if self.config.get('use_docker', False):
-            cmd.extend(['python -m fmriprep_docker'])
+            cmd.extend([sys.executable, '-m', 'fmriprep_docker'])
             cmd.extend([self.config['bids_dir'], self.config['output_dir'], 'participant'])
+            if self.config.get('work_dir'):
+                cmd.extend(['--work-dir', self.config['work_dir']])
+            cmd.append('--no-tty')
         else:
             cmd.extend(['apptainer', 'run', '--cleanenv'])
             cmd.extend(['-B', f"{self.config['bids_dir']}:/data:ro"])
@@ -138,9 +174,6 @@ class FMRIPrepThread(QThread):
         if self.config.get('output_spaces'):
             cmd.extend(['--output-spaces'] + self.config['output_spaces'])
 
-        if self.config.get('use_aroma'):
-            cmd.append('--aroma')#  从 fMRIPrep 25.x 开始，ICA-AROMA 参数 不再是 --use-aroma，而是使用 --aroma
-
         if self.config.get('fs_license'):
             cmd.extend(['--fs-license-file', self.config['fs_license']])
 
@@ -148,7 +181,29 @@ class FMRIPrepThread(QThread):
 
     def stop(self):
         if self.process:
-            self.process.terminate()
+            self._stop_requested = True
+            try:
+                if self.config.get('use_docker', False):
+                    result = subprocess.run(
+                        [
+                            "docker", "ps",
+                            "--filter", "ancestor=nipreps/fmriprep:25.2.5",
+                            "--format", "{{.ID}}"
+                        ],
+                        capture_output=True,
+                        text=True
+                    )
+                    container_ids = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+                    for container_id in container_ids:
+                        subprocess.run(["docker", "stop", container_id], capture_output=True, text=True)
+
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(self.process.pid)],
+                    capture_output=True,
+                    text=True
+                )
+            except Exception:
+                self.process.terminate()
             self.log_signal.emit("预处理已被用户终止")
 
 
@@ -263,10 +318,6 @@ class FMRIPrepWidget(QWidget):
         self.output_spaces.addItems(["MNI152NLin2009cAsym", "MNI152NLin6Asym", "fsaverage5", "fsaverage"])
         param_layout.addRow("输出空间:", self.output_spaces)
 
-        self.use_aroma = QCheckBox("使用 ICA-AROMA 去噪")
-        self.use_aroma.setChecked(True)
-        param_layout.addRow("", self.use_aroma)
-
         self.use_docker = QCheckBox("使用 Docker (否则使用 Apptainer)")
         param_layout.addRow("", self.use_docker)
 
@@ -344,7 +395,6 @@ class FMRIPrepWidget(QWidget):
             'n_cpus': self.n_cpus.value(),
             'mem_mb': self.mem_mb.value(),
             'output_spaces': [self.output_spaces.currentText()],
-            'use_aroma': self.use_aroma.isChecked(),
             'use_docker': self.use_docker.isChecked()
         }
 

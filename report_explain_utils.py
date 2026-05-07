@@ -10,6 +10,27 @@ import matplotlib.pyplot as plt
 from pycirclize import Circos
 
 
+def get_preferred_cjk_font():
+    candidates = [
+        r"C:\Windows\Fonts\msyh.ttc",
+        r"C:\Windows\Fonts\msyh.ttf",
+        r"C:\Windows\Fonts\simhei.ttf",
+        r"C:\Windows\Fonts\simsun.ttc",
+    ]
+    for font_path in candidates:
+        if os.path.exists(font_path):
+            return font_path
+    return None
+
+
+def configure_matplotlib_font():
+    plt.rcParams["font.sans-serif"] = ["Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "DejaVu Sans"]
+    plt.rcParams["axes.unicode_minus"] = False
+
+
+configure_matplotlib_font()
+
+
 
 def load_region_order(label_file):
     with open(label_file, "r", encoding="utf-8") as f:
@@ -59,9 +80,10 @@ def plot_top10_nodes_bar(top_nodes, out_png):
     scores = [x[1] for x in top_nodes][::-1]
 
     plt.figure(figsize=(8, 5))
+    plt.rcParams["font.sans-serif"] = ["Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "DejaVu Sans"]
     plt.barh(names, scores)
     plt.xlabel("Importance", fontsize=14)
-    plt.xticks(fontsize=24, fontname='Times New Roman')
+    plt.xticks(fontsize=24)
     plt.title("Top10 Brain Regions", fontsize=14)
     plt.tight_layout()
     plt.savefig(out_png, dpi=200)
@@ -141,9 +163,9 @@ def plot_top10_nodes_brain(top_nodes, coord_map, out_png):
 
 def export_report_pdf(out_pdf, case_data, result):
     # 注册中文字体（Windows 常用）
-    font_path = r"C:\Windows\Fonts\msyh.ttc"
-    if not os.path.exists(font_path):
-        font_path = r"C:\Windows\Fonts\simhei.ttf"
+    font_path = get_preferred_cjk_font()
+    if font_path is None:
+        raise RuntimeError("未找到可用的中文字体，请安装 Microsoft YaHei / SimHei / 宋体 等字体")
 
     pdfmetrics.registerFont(TTFont("CNFont", font_path))
 

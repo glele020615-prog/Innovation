@@ -1,7 +1,7 @@
 import sys
 import os
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPixmap
+from PySide6.QtGui import QColor, QFont, QFontDatabase, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QFileDialog,
                                QFormLayout, QFrame, QGroupBox, QHBoxLayout,
                                QLabel, QMainWindow, QMessageBox, QPushButton,
@@ -23,6 +23,16 @@ def get_resource_path(*parts):
     """兼容开发环境与打包环境的资源路径解析。"""
     base_dir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_dir, *parts)
+
+
+def get_preferred_ui_font(point_size=10):
+    families = QFontDatabase.families()
+    for family in ["Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "Arial Unicode MS"]:
+        if family in families:
+            return QFont(family, point_size)
+    font = QFont()
+    font.setPointSize(point_size)
+    return font
 
 
 class CoverImageWidget(QWidget):
@@ -254,7 +264,7 @@ class ADDiagnosisSystem(QMainWindow):
         self.resize(1520, 900)
         self.setMinimumSize(1320, 780)
         self.shared_case_data = None
-        self.setFont(QFont("Microsoft YaHei UI", 10))
+        self.setFont(get_preferred_ui_font(10))
 
         self.setStyleSheet("""
             QMainWindow {
@@ -783,7 +793,7 @@ class DataManagerPage(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setFont(QFont("Microsoft YaHei UI", 10))
+    app.setFont(get_preferred_ui_font(10))
     window = ADDiagnosisSystem()
     window.show()
     sys.exit(app.exec())
