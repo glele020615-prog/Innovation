@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QFileDialog,
                                QFormLayout, QFrame, QGroupBox, QHBoxLayout,
                                QLabel, QMainWindow, QMessageBox, QPushButton,
                                QStackedWidget, QTableWidget, QTableWidgetItem,
-                               QHeaderView, QVBoxLayout, QWidget,
+                               QHeaderView, QSizePolicy, QVBoxLayout, QWidget,
                                QGraphicsDropShadowEffect,
                                QGraphicsOpacityEffect)
 from viewer import fMRIViewWidget
@@ -79,15 +79,16 @@ class AngledNavButton(QPushButton):
         super().__init__(text, parent)
         self.setCheckable(True)
         self.setCursor(Qt.PointingHandCursor)
-        self.setFixedHeight(42)
-        self.setMinimumWidth(128)
+        self.setFixedHeight(52)
+        self.setMinimumWidth(150)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setStyleSheet("""
             QPushButton {
                 background: transparent;
                 color: #E0EDFF;
                 border: none;
-                padding: 0 18px;
-                font-size: 13px;
+                padding: 0 20px;
+                font-size: 15px;
                 font-weight: 700;
             }
         """)
@@ -260,7 +261,7 @@ class HomeImageCard(QFrame):
 class ADDiagnosisSystem(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("阿尔兹海默症 fMRI 智能预测系统 v2.0")
+        self.setWindowTitle("阿尔兹海默症  智能预测系统 v2.0")
         self.resize(1520, 900)
         self.setMinimumSize(1320, 780)
         self.shared_case_data = None
@@ -277,7 +278,7 @@ class ADDiagnosisSystem(QMainWindow):
                 border-bottom: 1px solid rgba(96, 190, 255, 0.22);
             }
             QLabel#appTitle {
-                font-size: 18px;
+                font-size: 24px;
                 font-weight: 700;
                 color: #E9F4FF;
                 letter-spacing: 1px;
@@ -286,8 +287,8 @@ class ADDiagnosisSystem(QMainWindow):
                 background-color: transparent;
                 color: #E0EDFF;
                 border: none;
-                padding: 0 18px;
-                font-size: 13px;
+                padding: 0 20px;
+                font-size: 15px;
                 font-weight: 700;
             }
             QPushButton#navButton:hover {
@@ -387,11 +388,10 @@ class ADDiagnosisSystem(QMainWindow):
             btn.setObjectName("navButton")
             btn.setCheckable(True)
             btn.setAutoExclusive(True)
-            self.nav_layout.addWidget(btn)
+            self.nav_layout.addWidget(btn, 1)
             if index != len(nav_buttons) - 1:
                 self.nav_layout.addWidget(NavBeamSeparator(self.nav_buttons_host))
 
-        self.nav_layout.addStretch(1)
         self.init_pages()
         self.btn_home.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))
         self.btn_data.clicked.connect(lambda: self.content_stack.setCurrentIndex(1))
@@ -404,22 +404,26 @@ class ADDiagnosisSystem(QMainWindow):
     def build_top_navigation(self):
         self.nav_bar = QFrame()
         self.nav_bar.setObjectName("topNavBar")
+        self.nav_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.nav_bar.setFixedHeight(112)
         self.main_layout.addWidget(self.nav_bar)
 
-        nav_container = QHBoxLayout(self.nav_bar)
-        nav_container.setContentsMargins(14, 10, 14, 10)
-        nav_container.setSpacing(14)
+        nav_container = QVBoxLayout(self.nav_bar)
+        nav_container.setContentsMargins(14, 8, 14, 8)
+        nav_container.setSpacing(6)
 
-        title_label = QLabel("阿尔茨海默症 fMRI 智能预测系统 v2.0")
+        title_label = QLabel("阿尔茨海默症  智能预测系统 v2.0")
         title_label.setObjectName("appTitle")
         nav_container.addWidget(title_label)
-        nav_container.addStretch(1)
+        nav_container.setAlignment(title_label, Qt.AlignLeft)
 
         self.nav_buttons_host = QWidget()
+        self.nav_buttons_host.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.nav_layout = QHBoxLayout(self.nav_buttons_host)
         self.nav_layout.setContentsMargins(0, 0, 0, 0)
-        self.nav_layout.setSpacing(0)
+        self.nav_layout.setSpacing(8)
         nav_container.addWidget(self.nav_buttons_host)
+        nav_container.setAlignment(self.nav_buttons_host, Qt.AlignVCenter)
 
     def build_home_page(self):
         page_home = HomePageWidget(get_resource_path("assets", "blackground.png"))
@@ -450,17 +454,17 @@ class ADDiagnosisSystem(QMainWindow):
         hero_tag.setObjectName("heroTag")
 
         hero_title = QLabel(
-            "阿尔茨海默症 <span id='heroTitleAccent'>fMRI</span><br/>智能预测系统"
+            "阿尔茨海默症 <span id='heroTitleAccent'></span><br/>智能预测系统"
         )
         hero_title.setObjectName("heroTitle")
         hero_title.setTextFormat(Qt.RichText)
 
-        hero_desc = QLabel(
-            "本系统采用 ST-GCN 深度学习模型，\n"
-            "通过分析静息态 fMRI 数据，辅助诊断阿尔茨海默症。"
-        )
-        hero_desc.setObjectName("heroDescription")
-        hero_desc.setWordWrap(True)
+        # hero_desc = QLabel(
+        #     "本系统采用 SA-STGCN 深度学习模型，\n"
+        #     "通过分析静息态 fMRI 数据，辅助诊断阿尔茨海默症。"
+        # )
+        # hero_desc.setObjectName("heroDescription")
+        # hero_desc.setWordWrap(True)
 
         start_button = QPushButton("请选择功能模块开始分析")
         start_button.setObjectName("startButton")
@@ -469,7 +473,7 @@ class ADDiagnosisSystem(QMainWindow):
 
         hero_layout.addWidget(hero_tag)
         hero_layout.addWidget(hero_title)
-        hero_layout.addWidget(hero_desc)
+        # hero_layout.addWidget(hero_desc)
         hero_layout.addWidget(start_button, alignment=Qt.AlignLeft)
         hero_layout.addStretch(1)
 
