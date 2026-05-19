@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import numpy as np
 from scipy import io
@@ -8,6 +9,11 @@ from PySide6.QtCore import Qt
 from SelfAttentionBlock_ST_GCN import Model
 import numpy as np
 import torch.nn.functional as F
+
+
+def get_resource_path(*parts):
+    base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_dir, *parts)
 
 class DiagnosisPage(QWidget):
     def __init__(self, main_window=None):
@@ -273,7 +279,8 @@ class DiagnosisPage(QWidget):
             )
 
             # 加载权重时使用 weights_only=True 以消除警告
-            state_dict = torch.load("best_acc_model_fold_1.pt", map_location=self.device, weights_only=True)
+            model_path = get_resource_path("best_acc_model_fold_1.pt")
+            state_dict = torch.load(model_path, map_location=self.device, weights_only=True)
 
             # 如果加载的权重维度与新模型不完全匹配（例如全连接层），可能需要处理
             model.load_state_dict(state_dict)
@@ -322,6 +329,8 @@ class DiagnosisPage(QWidget):
                 num_nodes=actual_nodes,
                 num_time_points=130
             )
+            if self.model is None:
+                raise RuntimeError("模型加载失败，请确认 best_acc_model_fold_1.pt 已随程序打包并可正常读取")
 
             # 4. 构造输入
             x_tensor = torch.from_numpy(bold).float().transpose(0, 1).unsqueeze(0).unsqueeze(0).to(self.device)
