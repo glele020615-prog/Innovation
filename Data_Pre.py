@@ -3,7 +3,6 @@ import os
 import shutil
 import json
 import csv
-import sys
 import nibabel as nib
 import numpy as np
 from PySide6.QtCore import QThread, Signal, Qt
@@ -17,6 +16,12 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QFont, QTextCursor
 
 from Read_Write_JSON import R_W_JSON
+
+
+def write_nifti_gz(source_path, destination_path):
+    """Read a NIfTI file and write it back as a real .nii.gz file."""
+    image = nib.load(source_path)
+    nib.save(image, destination_path)
 
 
 # ==================== BIDS转换线程 ====================
@@ -76,11 +81,32 @@ class FMRIPrepThread(QThread):
         self.process = None
         self._stop_requested = False
 
+    def check_docker_available(self):
+        try:
+            result = subprocess.run(
+                ["docker", "info"],
+                capture_output=True,
+                text=True,
+                timeout=20
+            )
+            return result.returncode == 0, result.stderr.strip() or result.stdout.strip()
+        except Exception as e:
+            return False, str(e)
+
     def run(self):
         try:
             self.log_signal.emit("=" * 60)
             self.log_signal.emit("启动 fMRIPrep 预处理流程")
             self.log_signal.emit("=" * 60)
+
+            if self.config.get('use_docker', False):
+                available, detail = self.check_docker_available()
+                if not available:
+                    self.finished_signal.emit(
+                        False,
+                        f"Docker 不可用，请先启动 Docker Desktop 并确认引擎正常运行。详情: {detail}"
+                    )
+                    return
 
             cmd = self.build_command()
             self.log_signal.emit(f"执行命令: {' '.join(cmd)}\n")
@@ -147,11 +173,29 @@ class FMRIPrepThread(QThread):
         cmd = []
 
         if self.config.get('use_docker', False):
-            cmd.extend([sys.executable, '-m', 'fmriprep_docker'])
-            cmd.extend([self.config['bids_dir'], self.config['output_dir'], 'participant'])
-            if self.config.get('work_dir'):
-                cmd.extend(['--work-dir', self.config['work_dir']])
-            cmd.append('--no-tty')
+            cmd.extend(['docker', 'run', '--rm'])
+
+            cmd.extend([
+                '-v', f"{self.config['bids_dir']}:/data:ro",
+                '-v', f"{self.config['output_dir']}:/out"
+            ])
+
+            work_dir = self.config.get('work_dir')
+            if work_dir:
+                cmd.extend(['-v', f"{work_dir}:/work"])
+
+            fs_license = self.config.get('fs_license')
+            if fs_license:
+                cmd.extend(['-v', f"{fs_license}:/opt/freesurfer/license.txt"])
+
+            cmd.append('nipreps/fmriprep:25.2.5')
+            cmd.extend(['/data', '/out', 'participant'])
+
+            if work_dir:
+                cmd.extend(['-w', '/work'])
+
+            if fs_license:
+                cmd.extend(['--fs-license-file', '/opt/freesurfer/license.txt'])
         else:
             cmd.extend(['apptainer', 'run', '--cleanenv'])
             cmd.extend(['-B', f"{self.config['bids_dir']}:/data:ro"])
@@ -165,17 +209,17 @@ class FMRIPrepThread(QThread):
             cmd.extend(['/data', '/out', 'participant'])
             cmd.extend(['-w', '/work'])
 
+            if self.config.get('fs_license'):
+                cmd.extend(['--fs-license-file', '/opt/freesurfer/license.txt'])
+
         if self.config.get('participant_label'):
             cmd.extend(['--participant-label', self.config['participant_label']])
 
-        cmd.extend(['--n-cpus', str(self.config.get('n_cpus', 8))])
-        cmd.extend(['--mem-mb', str(self.config.get('mem_mb', 32000))])
+        cmd.extend(['--nprocs', str(self.config.get('n_cpus', 8))])
+        cmd.extend(['--mem', str(self.config.get('mem_mb', 32000))])
 
         if self.config.get('output_spaces'):
             cmd.extend(['--output-spaces'] + self.config['output_spaces'])
-
-        if self.config.get('fs_license'):
-            cmd.extend(['--fs-license-file', self.config['fs_license']])
 
         return cmd
 
@@ -319,6 +363,7 @@ class FMRIPrepWidget(QWidget):
         param_layout.addRow("输出空间:", self.output_spaces)
 
         self.use_docker = QCheckBox("使用 Docker (否则使用 Apptainer)")
+        self.use_docker.setChecked(False)
         param_layout.addRow("", self.use_docker)
 
         layout.addWidget(param_group)
@@ -835,7 +880,7 @@ class PreprocessingPage(QWidget):
                 dest = os.path.join(anat_dir, f"{subject_id}_T1w.nii.gz")
             else:
                 dest = os.path.join(anat_dir, f"{subject_id}_run-{i + 1}_T1w.nii.gz")
-            shutil.copy2(file_path, dest)
+            write_nifti_gz(file_path, dest)
             self.generate_json_metadata(dest, "T1w")
             self.append_bids_log(f"已添加结构像: {os.path.basename(dest)}")
 
@@ -845,7 +890,7 @@ class PreprocessingPage(QWidget):
                 dest = os.path.join(func_dir, f"{subject_id}_task-rest_bold.nii.gz")
             else:
                 dest = os.path.join(func_dir, f"{subject_id}_task-rest_run-{i + 1}_bold.nii.gz")
-            shutil.copy2(file_path, dest)
+            write_nifti_gz(file_path, dest)
             self.generate_json_metadata(dest, "bold")
             self.append_bids_log(f"已添加功能像: {os.path.basename(dest)}")
 
@@ -861,12 +906,12 @@ class PreprocessingPage(QWidget):
 
             if reply == QMessageBox.Yes:
                 dest = os.path.join(anat_dir, f"{subject_id}_T1w.nii.gz")
-                shutil.copy2(file_path, dest)
+                write_nifti_gz(file_path, dest)
                 self.generate_json_metadata(dest, "T1w")
                 self.append_bids_log(f"已添加结构像(手动): {os.path.basename(dest)}")
             elif reply == QMessageBox.No:
                 dest = os.path.join(func_dir, f"{subject_id}_task-rest_bold.nii.gz")
-                shutil.copy2(file_path, dest)
+                write_nifti_gz(file_path, dest)
                 self.generate_json_metadata(dest, "bold")
                 self.append_bids_log(f"已添加功能像(手动): {os.path.basename(dest)}")
 
@@ -915,7 +960,7 @@ class PreprocessingPage(QWidget):
                     dest = os.path.join(anat_dir, f"{subject_id}_T1w.nii.gz")
                 else:
                     dest = os.path.join(anat_dir, f"{subject_id}_run-{t1_count}_T1w.nii.gz")
-                shutil.copy2(file_path, dest)
+                write_nifti_gz(file_path, dest)
                 self.generate_json_metadata(dest, "T1w")
                 self.append_bids_log(f"已添加结构像: {os.path.basename(dest)}")
             else:
@@ -925,7 +970,7 @@ class PreprocessingPage(QWidget):
                     dest = os.path.join(func_dir, f"{subject_id}_task-rest_bold.nii.gz")
                 else:
                     dest = os.path.join(func_dir, f"{subject_id}_task-rest_run-{bold_count}_bold.nii.gz")
-                shutil.copy2(file_path, dest)
+                write_nifti_gz(file_path, dest)
                 self.generate_json_metadata(dest, "bold")
                 self.append_bids_log(f"已添加功能像: {os.path.basename(dest)}")
 

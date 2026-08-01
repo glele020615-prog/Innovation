@@ -582,6 +582,8 @@ class DataManagerPage(QWidget):
         viewer_v_layout.addWidget(self.viewer)
         self.bottom_h_layout.addWidget(self.viewer_group, 3)  # Viewer 稍宽
 
+        self.viewer_group.setStyleSheet("QGroupBox { color: white; }")
+
         # 右下：参数面板
         self.detail_group = QGroupBox("数据参数详情")
         self.detail_f_layout = QFormLayout(self.detail_group)
@@ -593,6 +595,17 @@ class DataManagerPage(QWidget):
             "TR": QLabel("-"),
             "时间点": QLabel("-")
         }
+        
+
+        self.detail_group.setStyleSheet("""
+            QGroupBox {
+                color: white;
+            }
+            QLabel {
+                color: white;
+            }
+        """)
+
 
         # 设置标签样式并添加到布局
         for key, label in self.param_labels.items():
