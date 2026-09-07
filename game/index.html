@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>认知训练小游戏 · 首页</title>
+<style>
+/* ================= 基础样式（适老化：大字号、高对比、柔和配色） ================= */
+:root{
+  --bg:#F6F3EB; --card:#FFFFFF; --ink:#33302B; --muted:#7A7362;
+  --line:#DCD5C4; --blue:#2B6CB0; --blue-d:#245A93; --blue-bg:#EAF2FA;
+  --green:#2F7D51; --green-bg:#E8F3EC; --amber-line:#D89B3D; --amber-bg:#FFF3DF; --amber-ink:#7A5200;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:24px;line-height:1.65}
+.wrap{max-width:1020px;margin:0 auto;padding:22px 18px 90px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:6px}
+h1{font-size:40px;letter-spacing:2px;flex:1;min-width:280px}
+h2{font-size:32px;margin:6px 0 14px}
+.sub{color:var(--muted);font-size:26px;margin-bottom:20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:64px;padding:10px 30px;font-size:28px;font-family:inherit;border-radius:14px;border:3px solid transparent;background:var(--blue);color:#fff;cursor:pointer;transition:background .2s;user-select:none}
+.btn:hover{background:var(--blue-d)}
+.btn.ghost{background:#fff;color:var(--blue);border-color:var(--blue)}
+.btn.ghost:hover{background:var(--blue-bg)}
+.btn.green{background:var(--green)}
+.btn.green:hover{background:#276A45}
+.btn.red{background:#B4532A}
+.btn.red:hover{background:#96431F}
+.topbtn{min-height:60px;font-size:24px;padding:6px 22px;border-radius:12px}
+.row{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:20px 0}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:22px;margin-bottom:18px}
+.muted{color:var(--muted)}
+.center{text-align:center}
+
+/* 游戏入口卡片 */
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin:10px 0 24px}
+.gcard{display:flex;flex-direction:column;gap:6px;min-height:150px;padding:20px 22px;background:var(--card);border:3px solid var(--line);border-radius:18px;text-decoration:none;color:var(--ink);cursor:pointer;transition:border-color .2s,background .2s}
+.gcard:hover{border-color:var(--blue);background:var(--blue-bg)}
+.gcard .gt{font-size:30px;font-weight:bold;display:flex;align-items:center;gap:12px}
+.gcard .gt .gi{font-size:44px;line-height:1}
+.gcard .gd{font-size:24px;color:var(--muted)}
+.gcard .gl{font-size:22px;color:var(--blue);margin-top:auto}
+
+/* 训练记录表格 */
+.tablewrap{overflow-x:auto;background:var(--card);border:2px solid var(--line);border-radius:16px}
+table{border-collapse:collapse;width:100%;min-width:900px;font-size:24px}
+th,td{padding:12px 14px;text-align:left;border-bottom:2px solid var(--line);white-space:nowrap}
+th{background:#EFEAE0;font-size:24px}
+tr:last-child td{border-bottom:none}
+select{min-height:60px;font-size:24px;font-family:inherit;padding:6px 14px;border-radius:12px;border:3px solid var(--line);background:#fff;color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0}
+.chip{background:#fff;border:2px solid var(--line);border-radius:12px;padding:6px 18px;font-size:24px}
+.chip b{color:var(--blue)}
+ul.tips{margin:10px 0 10px 30px}
+ul.tips li{margin-bottom:6px}
+
+/* 遮罩与对话框 */
+.mask{position:fixed;inset:0;background:rgba(46,44,38,.5);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.mask.show{display:flex}
+.modal{background:#fff;border-radius:18px;padding:30px 28px;max-width:580px;width:100%;text-align:center;box-shadow:0 6px 30px rgba(0,0,0,.25)}
+.modal p{margin-bottom:22px;font-size:28px}
+</style>
+</head>
+<body>
+
+<!-- ================= 首页 ================= -->
+<div class="wrap" id="homeView">
+  <div class="top"><h1>🧠 认知训练小游戏</h1></div>
+  <p class="sub">每天几分钟，动动脑，练一练。答错没关系，慢慢来。</p>
+
+  <div class="games" id="gameList"></div>
+
+  <div class="row">
+    <button class="btn ghost" id="btnRecords">📊 查看训练记录</button>
+  </div>
+
+  <div class="panel">
+    <b>使用小提示</b>
+    <ul class="tips">
+      <li>每天练习 5～10 分钟就够了，不用贪多。</li>
+      <li>建议在安静、光线好的地方练习。</li>
+      <li>难度会根据您的表现自动调整，越练越顺手。</li>
+    </ul>
+    <p class="muted" style="font-size:22px">所有训练记录只保存在这台电脑上，不会上传网络。本游戏属于休闲益智练习，不能替代医生的建议。</p>
+  </div>
+</div>
+
+<!-- ================= 训练记录页 ================= -->
+<div class="wrap" id="recView" hidden>
+  <div class="top">
+    <button class="btn ghost topbtn" id="btnBackHome">🏠 返回首页</button>
+    <h2 style="flex:1;min-width:240px">📊 训练记录</h2>
+  </div>
+
+  <div class="chips" id="sumChips"></div>
+
+  <div class="row" style="justify-content:flex-start">
+    <label for="selFilter" style="font-size:24px">筛选游戏：</label>
+    <select id="selFilter"></select>
+    <button class="btn ghost topbtn" id="btnCSV">📥 导出 CSV</button>
+    <button class="btn ghost topbtn" id="btnClear">🗑 清空记录</button>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>日期</th><th>游戏</th><th>难度</th><th>完成题数</th><th>正确题数</th><th>正确率</th><th>平均反应（秒）</th><th>训练时长</th><th>备注</th></tr>
+      </thead>
+      <tbody id="recBody"></tbody>
+    </table>
+  </div>
+  <p class="muted" id="recEmpty" hidden style="text-align:center;padding:30px 0">还没有训练记录，先去玩一局吧。</p>
+</div>
+
+<!-- 确认对话框 -->
+<div class="mask" id="askMask">
+  <div class="modal">
+    <p id="askText"></p>
+    <div class="row" style="margin-bottom:0">
+      <button class="btn" id="askYes">是的</button>
+      <button class="btn ghost" id="askNo">先不了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 本机存储包装（localStorage，全部数据只在本机） ================= */
+var store={
+  get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+var RECORDS_KEY='ctt_records';
+
+/* 游戏清单：文件、图标、名称、说明、难度状态键、各级难度名称 */
+var GAMES=[
+  {f:'game1.html',icon:'🃏',name:'记忆翻牌',    desc:'翻开卡片，找出相同的一对',   key:'ctt_state_1',lv:['简单','中等','较难','挑战']},
+  {f:'game2.html',icon:'💡',name:'记住亮灯顺序',desc:'记住按钮点亮的先后顺序',     key:'ctt_state_2',lv:['简单','中等','较难','挑战','高阶']},
+  {f:'game3.html',icon:'🛒',name:'记住购物清单',desc:'先看清单，再把东西挑出来',   key:'ctt_state_3',lv:['简单','中等','较难','挑战']},
+  {f:'game4.html',icon:'📋',name:'生活顺序',    desc:'把做事的步骤排好队',         key:'ctt_state_4',lv:['简单（3步）','中等（4步）','较难（5步）','高级（6步）']},
+  {f:'game5.html',icon:'🔍',name:'找一找',      desc:'在格子里找出指定的图形',     key:'ctt_state_5',lv:['简单','中等','较难','挑战']}
+];
+
+/* ================= 首页渲染 ================= */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function fmtDT(t){
+  var d=new Date(t),p=function(n){return (n<10?'0':'')+n};
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+function fmtDur(sec){var m=Math.floor(sec/60),s=sec%60;return m+'分'+((s<10?'0':'')+s)+'秒'}
+
+function lastRecordOf(name){
+  var list=store.get(RECORDS_KEY,[]);
+  for(var i=0;i<list.length;i++) if(list[i].game===name) return list[i];
+  return null;
+}
+
+function renderHome(){
+  var html='';
+  GAMES.forEach(function(g){
+    var st=store.get(g.key,{lv:1});
+    var lvName=g.lv[(st.lv||1)-1]||g.lv[0];
+    var last=lastRecordOf(g.name);
+    var lastTxt=last?('上次训练：'+fmtDT(last.t)):'还没有玩过';
+    html+='<a class="gcard" href="'+g.f+'">'
+        +'<span class="gt"><span class="gi">'+g.icon+'</span>'+g.name+'</span>'
+        +'<span class="gd">'+g.desc+'</span>'
+        +'<span class="gl">当前难度：'+lvName+' ｜ '+lastTxt+'</span>'
+        +'</a>';
+  });
+  document.getElementById('gameList').innerHTML=html;
+}
+
+/* ================= 记录页渲染 ================= */
+function getRecords(){
+  var list=store.get(RECORDS_KEY,[]);
+  list.sort(function(a,b){return new Date(b.t)-new Date(a.t)});
+  return list;
+}
+
+function renderRecords(){
+  var sel=document.getElementById('selFilter');
+  var filter=sel.value;
+  var all=getRecords();
+  var list=filter?all.filter(function(r){return r.game===filter}):all;
+
+  /* 汇总：总次数、总时长 */
+  var totalSec=0;all.forEach(function(r){totalSec+=r.dur||0});
+  document.getElementById('sumChips').innerHTML=
+    '<span class="chip">共训练 <b>'+all.length+'</b> 次</span>'
+   +'<span class="chip">累计时长 <b>'+fmtDur(totalSec)+'</b></span>';
+
+  var body=document.getElementById('recBody');
+  document.getElementById('recEmpty').hidden=list.length>0;
+  var html='';
+  list.slice(0,300).forEach(function(r){
+    html+='<tr><td>'+esc(fmtDT(r.t))+'</td><td>'+esc(r.game)+'</td><td>'+esc(r.levelName||'—')+'</td>'
+        +'<td>'+r.questions+'</td><td>'+r.correct+'</td><td>'+(r.acc||0)+'%</td>'
+        +'<td>'+(r.avgRT>0?r.avgRT:'—')+'</td><td>'+esc(fmtDur(r.dur||0))+'</td><td>'+esc(r.note||'')+'</td></tr>';
+  });
+  body.innerHTML=html;
+}
+
+function initFilter(){
+  var sel=document.getElementById('selFilter');
+  var html='<option value="">全部游戏</option>';
+  GAMES.forEach(function(g){html+='<option value="'+esc(g.name)+'">'+g.icon+' '+esc(g.name)+'</option>'});
+  sel.innerHTML=html;
+  sel.onchange=renderRecords;
+}
+
+/* ================= 导出 CSV（加 BOM，Excel 打开不乱码） ================= */
+function exportCSV(){
+  var list=getRecords();
+  if(!list.length){alert('还没有训练记录，先去玩一局吧。');return}
+  function q(s){s=String(s==null?'':s);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
+  var lines=['日期,游戏,难度,完成题数,正确题数,正确率(%),平均反应时间(秒),训练时长,训练时长(秒),备注'];
+  list.forEach(function(r){
+    lines.push([fmtDT(r.t),r.game,r.levelName||'',r.questions,r.correct,(r.acc||0)+'%',
+      r.avgRT>0?r.avgRT:'',fmtDur(r.dur||0),r.dur||0,q(r.note||'')].join(','));
+  });
+  var blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  var d=new Date(),p=function(n){return (n<10?'0':'')+n};
+  a.download='认知训练记录-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'.csv';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500);
+}
+
+/* ================= 确认对话框 ================= */
+var askYes=null;
+function askModal(text,cb){
+  document.getElementById('askText').textContent=text;
+  askYes=cb;
+  document.getElementById('askMask').classList.add('show');
+}
+document.getElementById('askYes').onclick=function(){
+  document.getElementById('askMask').classList.remove('show');
+  if(askYes){var f=askYes;askYes=null;f()}
+};
+document.getElementById('askNo').onclick=function(){
+  document.getElementById('askMask').classList.remove('show');askYes=null;
+};
+
+/* ================= 页面切换与按钮事件 ================= */
+document.getElementById('btnRecords').onclick=function(){
+  document.getElementById('homeView').hidden=true;
+  document.getElementById('recView').hidden=false;
+  renderRecords();
+};
+document.getElementById('btnBackHome').onclick=function(){
+  document.getElementById('recView').hidden=true;
+  document.getElementById('homeView').hidden=false;
+  renderHome();  /* 返回时刷新“上次训练” */
+};
+document.getElementById('btnCSV').onclick=exportCSV;
+document.getElementById('btnClear').onclick=function(){
+  askModal('确定要清空全部训练记录吗？清空后无法恢复。',function(){
+    store.set(RECORDS_KEY,[]);
+    renderRecords();renderHome();
+  });
+};
+
+initFilter();
+renderHome();
+</script>
+</body>
+</html>

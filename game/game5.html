@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>找一找 · 认知训练</title>
+<style>
+/* ================= 基础样式（适老化：大字号、高对比、柔和配色） ================= */
+:root{
+  --bg:#F6F3EB; --card:#FFFFFF; --ink:#33302B; --muted:#7A7362;
+  --line:#DCD5C4; --blue:#2B6CB0; --blue-d:#245A93; --blue-bg:#EAF2FA;
+  --green:#2F7D51; --green-bg:#E8F3EC; --amber-line:#D89B3D; --amber-bg:#FFF3DF; --amber-ink:#7A5200;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:24px;line-height:1.65}
+.wrap{max-width:1020px;margin:0 auto;padding:22px 18px 90px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:4px}
+h1{font-size:38px;letter-spacing:2px;flex:1;min-width:260px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:64px;padding:10px 30px;font-size:28px;font-family:inherit;border-radius:14px;border:3px solid transparent;background:var(--blue);color:#fff;cursor:pointer;transition:background .2s;user-select:none}
+.btn:hover{background:var(--blue-d)}
+.btn.ghost{background:#fff;color:var(--blue);border-color:var(--blue)}
+.btn.ghost:hover{background:var(--blue-bg)}
+.btn.green{background:var(--green)}
+.btn.green:hover{background:#276A45}
+.btn:disabled{opacity:.4;cursor:default}
+.topbtn{min-height:60px;font-size:24px;padding:6px 20px;border-radius:12px}
+.status{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 16px}
+.chip{background:#fff;border:2px solid var(--line);border-radius:12px;padding:6px 18px;font-size:24px}
+.chip b{color:var(--blue)}
+.guide{font-size:28px;text-align:center;margin:4px 0 14px}
+.fb{display:none;border-radius:14px;padding:14px 20px;margin:14px 0;font-size:28px;line-height:1.5;text-align:center}
+.fb.show{display:block}
+.fb.ok{background:var(--green-bg);border:3px solid var(--green);color:#1F5B3B}
+.fb.warn{background:var(--amber-bg);border:3px solid var(--amber-line);color:var(--amber-ink)}
+.row{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:20px 0}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:24px;margin:10px 0}
+.center{text-align:center}
+.muted{color:var(--muted)}
+
+/* ================= 目标提示区 ================= */
+.targetbar{display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;margin:6px 0 18px}
+.tchar{width:120px;height:120px;border:5px solid var(--blue);border-radius:18px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:72px;color:var(--ink)}
+.tname{font-size:30px}
+
+/* ================= 网格 ================= */
+.grid{display:grid;gap:14px;justify-content:center;margin:8px auto}
+.cell{position:relative;width:122px;height:140px;border:4px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;font-size:56px;color:var(--ink);padding:6px 6px 26px;transition:border-color .2s,background .2s;user-select:none}
+.cell:hover{border-color:var(--blue)}
+.cell .sym{line-height:1.1}
+.cell.sel{border-color:var(--blue);background:var(--blue-bg);border-width:5px}
+.cell .tick{position:absolute;top:6px;right:8px;font-size:28px;color:var(--blue);display:none}
+.cell.sel .tick{display:block}
+/* 提交后的批改状态（不使用刺眼的红色闪烁） */
+.cell.hit{border-color:var(--green);background:var(--green-bg);cursor:default}
+.cell.miss{border-style:dashed;border-color:var(--amber-line);background:var(--amber-bg);cursor:default}
+.cell.extra{border-color:var(--amber-line);background:var(--amber-bg);cursor:default}
+.cell.dim{opacity:.55;cursor:default}
+.cell .badge{display:none;position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:24px;line-height:1.25}
+.cell.hit .badge{display:block;color:#1F5B3B}
+.cell.miss .badge{display:block;color:var(--amber-ink)}
+.cell.extra .badge{display:block;color:var(--amber-ink)}
+
+/* ================= 小结面板 ================= */
+.sumgrid{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:14px 0}
+.sumbox{background:#fff;border:2px solid var(--line);border-radius:14px;padding:14px 24px;text-align:center;min-width:150px}
+.sumbox .v{font-size:38px;font-weight:bold;color:var(--blue)}
+.sumbox .k{font-size:24px;color:var(--muted)}
+
+/* ================= 遮罩与对话框 ================= */
+.mask{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.mask.show{display:flex}
+.pausemask{background:rgba(246,243,235,.97)}
+.askmask{background:rgba(46,44,38,.5)}
+.modal{background:#fff;border-radius:18px;padding:30px 28px;max-width:580px;width:100%;text-align:center;box-shadow:0 6px 30px rgba(0,0,0,.25)}
+.modal p{margin-bottom:22px;font-size:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>🔍 找一找</h1>
+    <button class="btn ghost topbtn" id="btnPause">⏸ 暂停</button>
+    <button class="btn ghost topbtn" id="btnRestart">↻ 重新开始</button>
+    <button class="btn ghost topbtn" id="btnHome">🏠 返回首页</button>
+  </div>
+
+  <div class="status">
+    <span class="chip">难度：<b id="stLevel">简单</b></span>
+    <span class="chip">题目：<b id="stQ">0 / 8</b></span>
+    <span class="chip">用时：<b id="stTime">0分00秒</b></span>
+  </div>
+
+  <main>
+    <!-- 答题区 -->
+    <section id="qView">
+      <div class="targetbar">
+        <span style="font-size:30px">请找出所有：</span>
+        <span class="tchar" id="tchar">●</span>
+        <span class="tname" id="tname">实心圆形</span>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="row">
+        <button class="btn green" id="btnDone" disabled>✅ 找好了</button>
+      </div>
+    </section>
+
+    <!-- 反馈 -->
+    <section id="fbView" hidden>
+      <div class="fb" id="fb"></div>
+      <div class="grid" id="gridFB"></div>
+      <div class="row">
+        <button class="btn green" id="btnNext">下一题</button>
+      </div>
+    </section>
+
+    <!-- 本轮小结 -->
+    <div class="panel" id="sumPanel" hidden>
+      <h2 class="center" style="font-size:36px;margin-bottom:6px">🎉 本轮训练完成</h2>
+      <div class="sumgrid" id="sumGrid"></div>
+      <p class="muted center" id="sumTip" style="font-size:24px"></p>
+      <div class="row">
+        <button class="btn green" id="btnAgain">再来一轮</button>
+        <button class="btn ghost" id="btnHome2">返回首页</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 暂停遮罩 -->
+<div class="mask pausemask" id="pauseMask">
+  <div class="modal">
+    <p>⏸ 已暂停</p>
+    <p class="muted" style="font-size:24px;margin-top:-14px">休息一下，准备好了再继续。</p>
+    <div class="row" style="margin-bottom:0"><button class="btn" id="btnResume">继续</button></div>
+  </div>
+</div>
+
+<!-- 确认对话框 -->
+<div class="mask askmask" id="askMask">
+  <div class="modal">
+    <p id="askText"></p>
+    <div class="row" style="margin-bottom:0">
+      <button class="btn" id="askYes">是的</button>
+      <button class="btn ghost" id="askNo">先不了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   通用部分：本机存储 / 可暂停计时器 / 训练时钟 / 难度自适应 / 记录
+   ============================================================ */
+var store={
+  get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+var RECORDS_KEY='ctt_records';
+
+function upsertRecord(rec){
+  var list=store.get(RECORDS_KEY,[]);
+  var i=-1;
+  for(var k=0;k<list.length;k++){if(list[k].sid===rec.sid){i=k;break}}
+  if(i>=0)list[i]=rec;else list.unshift(rec);
+  store.set(RECORDS_KEY,list);
+}
+
+/* ---- 可暂停延时器：暂停时记住剩余时间，恢复后继续 ---- */
+var paused=false;
+var pendingTimers=[];
+function later(ms,fn){
+  var h={remain:ms,fn:fn,id:null,end:Date.now()+ms};
+  h.fire=function(){
+    for(var i=0;i<pendingTimers.length;i++){if(pendingTimers[i]===h){pendingTimers.splice(i,1);break}}
+    fn();
+  };
+  h.id=setTimeout(h.fire,ms);
+  pendingTimers.push(h);
+}
+function clearPendingTimers(){
+  pendingTimers.forEach(function(h){clearTimeout(h.id)});
+  pendingTimers=[];
+}
+function pauseTimers(){pendingTimers.forEach(function(h){clearTimeout(h.id);h.remain=Math.max(0,h.end-Date.now())})}
+function resumeTimers(){pendingTimers.forEach(function(h){h.end=Date.now()+h.remain;h.id=setTimeout(h.fire,h.remain)})}
+
+/* ---- 训练时钟：自动扣除暂停时间 ---- */
+function fmtTime(sec){
+  var m=Math.floor(sec/60),s=Math.floor(sec%60);
+  return m+'分'+(s<10?'0':'')+s+'秒';
+}
+function makeClock(el){
+  var run=0,last=null,iv=null;
+  function tick(){
+    if(last!==null){run+=Date.now()-last;last=Date.now()}
+    if(el)el.textContent=fmtTime(Math.floor(run/1000));
+  }
+  return{
+    start:function(){if(iv)return;last=Date.now();iv=setInterval(tick,500);tick()},
+    stop:function(){if(iv){clearInterval(iv);iv=null}last=null},
+    pause:function(){if(last!==null){run+=Date.now()-last;last=null}},
+    resume:function(){if(last===null)last=Date.now()},
+    elapsed:function(){return run+(last!==null?(Date.now()-last):0)}
+  };
+}
+
+/* ---- 难度自适应：最近5题平均≥80%升一级、<60%降一级；连错3次提示并降级 ---- */
+function makeEngine(key,maxLv,names){
+  var st=store.get(key,{lv:1,hist:[],streak:0});
+  function save(){store.set(key,st)}
+  return{
+    get lv(){return st.lv},
+    get name(){return names[st.lv-1]},
+    answer:function(score){
+      st.hist.push(score);if(st.hist.length>5)st.hist.shift();
+      var delta=0;
+      if(st.hist.length>=3){
+        var avg=0;for(var i=0;i<st.hist.length;i++)avg+=st.hist[i];
+        avg/=st.hist.length;
+        if(avg>=0.8)delta=1;else if(avg<0.6)delta=-1;
+      }
+      if(score<0.5)st.streak++;else st.streak=0;
+      var hint=false;
+      if(st.streak>=3){hint=true;delta=-1;st.streak=0}
+      if(delta>0&&st.lv<maxLv)st.lv++;
+      else if(delta<0&&st.lv>1)st.lv--;
+      save();return{delta:delta,hint:hint};
+    }
+  };
+}
+
+/* ---- 一次训练会话：边玩边保存，记录只存在本机 ---- */
+function makeSession(game,clock){
+  var S={sid:Date.now()+'-'+Math.floor(Math.random()*1e4),game:game,q:0,scoreSum:0,correct:0,rtSum:0,rtN:0,notes:[],lvName:''};
+  return{
+    push:function(score,rt,note,lvName){
+      S.q++;S.scoreSum+=score;
+      if(score>=0.8)S.correct++;
+      if(rt>0){S.rtSum+=rt;S.rtN++}
+      if(note)S.notes.push(note);
+      if(lvName)S.lvName=lvName;
+      this.save();
+    },
+    save:function(){
+      if(S.q<1)return;
+      upsertRecord({
+        sid:S.sid,t:new Date().toISOString(),game:S.game,levelName:S.lvName,
+        questions:S.q,correct:S.correct,acc:Math.round(100*S.scoreSum/S.q),
+        avgRT:S.rtN?+(S.rtSum/S.rtN).toFixed(1):-1,
+        dur:Math.max(1,Math.round(clock.elapsed()/1000)),
+        note:S.notes.slice(-4).join('；')
+      });
+    },
+    get q(){return S.q}
+  };
+}
+
+/* ---- 确认对话框 ---- */
+var askYes=null;
+function askModal(text,cb){
+  document.getElementById('askText').textContent=text;
+  askYes=cb;document.getElementById('askMask').classList.add('show');
+}
+document.getElementById('askYes').onclick=function(){
+  document.getElementById('askMask').classList.remove('show');
+  if(askYes){var f=askYes;askYes=null;f()}
+};
+document.getElementById('askNo').onclick=function(){document.getElementById('askMask').classList.remove('show');askYes=null};
+
+/* ============================================================
+   游戏部分：《找一找》
+   ============================================================ */
+
+/* 可用作目标的符号：图形 / 数字 / 简单汉字 */
+var SHAPES=[{c:'●',n:'实心圆形',cat:'s'},{c:'▲',n:'实心三角形',cat:'s'},{c:'■',n:'实心正方形',cat:'s'},{c:'★',n:'实心五角星',cat:'s'}];
+var DIGITS=[{c:'3',n:'数字 3',cat:'d'},{c:'5',n:'数字 5',cat:'d'},{c:'6',n:'数字 6',cat:'d'},{c:'8',n:'数字 8',cat:'d'}];
+var CHARS=[{c:'日',n:'汉字「日」',cat:'c'},{c:'目',n:'汉字「目」',cat:'c'},{c:'人',n:'汉字「人」',cat:'c'},{c:'木',n:'汉字「木」',cat:'c'},{c:'山',n:'汉字「山」',cat:'c'}];
+var ALL=SHAPES.concat(DIGITS,CHARS);
+
+/* 外形相似的干扰符号（第 4 级使用）：实心↔空心、形近数字、形近汉字 */
+var SIM={'●':'○','▲':'△','■':'□','★':'☆','3':'8','8':'3','5':'6','6':'5','日':'目','目':'日','人':'入','木':'本'};
+
+/* 各难度：网格大小 / 目标个数 */
+var CFG=[{g:3,t:3},{g:4,t:4},{g:5,t:5},{g:5,t:5}];
+var LV_NAMES=['简单','中等','较难','挑战'];
+var TOTAL=8;   /* 每轮 8 题 */
+
+var engine=makeEngine('ctt_state_5',4,LV_NAMES);
+var timeEl=document.getElementById('stTime');
+var clock=makeClock(timeEl);
+var session=makeSession('找一找',clock);
+
+var qNo=0,target=null,cells=[],goMs=0;
+/* 本轮汇总 */
+var totTargets=0,totHits=0,totMiss=0,totExtra=0;
+
+var $=function(id){return document.getElementById(id)};
+var qView=$('qView'),fbView=$('fbView'),sumPanel=$('sumPanel');
+
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function updateChips(){
+  $('stLevel').textContent=engine.name;
+  $('stQ').textContent=qNo+' / '+TOTAL;
+}
+
+/* 从池子里取 n 个干扰符号（不够时允许重复） */
+function pickDistinct(pool,n){
+  var out=[],i=0,sh=shuffle(pool.slice());
+  while(out.length<n){out.push(sh[i%sh.length]);i++}
+  return out;
+}
+
+/* 生成一题 */
+function genQuestion(){
+  var cfg=CFG[engine.lv-1],lv=engine.lv;
+  /* 第 4 级只选有相似干扰符号的目标，其余级别从全部符号中选 */
+  var pool=(lv===4)?ALL.filter(function(x){return SIM[x.c]}):ALL;
+  target=pool[Math.floor(Math.random()*pool.length)];
+  var sim=SIM[target.c];
+
+  /* 干扰符号池：排除目标和它的相似符号 */
+  var others=ALL.filter(function(x){return x.c!==target.c&&x.c!==sim});
+  if(lv===1){
+    /* 第 1 级：干扰项和目标差异要明显，用不同类别 */
+    others=others.filter(function(x){return x.cat!==target.cat});
+  }
+
+  var dCount=cfg.g*cfg.g-cfg.t;
+  var dChars=[];
+  if(lv===4&&sim){
+    var nSim=Math.floor(dCount*0.6);            /* 六成干扰项外形相似 */
+    for(var i=0;i<nSim;i++)dChars.push(sim);
+    dChars=dChars.concat(pickDistinct(others,dCount-nSim).map(function(x){return x.c}));
+  }else{
+    dChars=pickDistinct(others,dCount).map(function(x){return x.c});
+  }
+
+  cells=[];
+  for(var k=0;k<cfg.t;k++)cells.push({c:target.c,isT:true,sel:false});
+  dChars.forEach(function(c){cells.push({c:c,isT:false,sel:false})});
+  shuffle(cells);
+  return cfg.g;
+}
+
+/* 渲染网格（作答模式） */
+function renderGrid(){
+  var g=$('grid');
+  var size=genQuestion();
+  g.style.gridTemplateColumns='repeat('+size+',122px)';
+  g.innerHTML='';
+  cells.forEach(function(cell){
+    var b=document.createElement('button');
+    b.type='button';b.className='cell';
+    b.innerHTML='<span class="tick">✔</span><span class="sym">'+cell.c+'</span>';
+    b.onclick=function(){
+      if(paused)return;
+      cell.sel=!cell.sel;
+      b.classList.toggle('sel',cell.sel);
+      $('btnDone').disabled=!cells.some(function(x){return x.sel});
+    };
+    g.appendChild(b);
+  });
+  $('btnDone').disabled=true;
+  $('tchar').textContent=target.c;
+  $('tname').textContent=target.n;
+}
+
+/* 提交答案 */
+function submit(){
+  if(paused)return;
+  var hits=0,miss=0,extra=0;
+  cells.forEach(function(c){
+    if(c.isT&&c.sel)hits++;
+    else if(c.isT&&!c.sel)miss++;
+    else if(!c.isT&&c.sel)extra++;
+  });
+  var rt=(clock.elapsed()-goMs)/1000;
+  var tCount=cells.filter(function(c){return c.isT}).length;
+  var score=Math.max(0,(hits-extra)/tCount);
+  var res=engine.answer(score);
+  totTargets+=tCount;
+  totHits+=hits;totMiss+=miss;totExtra+=extra;
+  session.push(score,rt,'找'+hits+'/'+tCount,engine.name);
+
+  /* 渲染批改网格 */
+  var g=$('gridFB');
+  g.style.gridTemplateColumns=$('grid').style.gridTemplateColumns;
+  g.innerHTML='';
+  cells.forEach(function(c){
+    var cls='',badge='';
+    if(c.isT&&c.sel){cls='hit';badge='找对了 ✔'}
+    else if(c.isT&&!c.sel){cls='miss';badge='它也是目标'}
+    else if(!c.isT&&c.sel){cls='extra';badge='不是目标'}
+    else{cls='dim'}
+    var d=document.createElement('div');
+    d.className='cell '+cls;
+    d.innerHTML='<span class="sym">'+c.c+'</span><span class="badge">'+badge+'</span>';
+    g.appendChild(d);
+  });
+
+  var fb=$('fb');
+  if(miss===0&&extra===0){
+    fb.className='fb show ok';fb.textContent='全部找到了，真好！👍';
+  }else{
+    fb.className='fb show warn';
+    fb.textContent='找对了 '+hits+' 个，漏掉 '+miss+' 个，点错了 '+extra+' 个。没关系，下一题再来。';
+  }
+  if(res.hint)fb.textContent+=' 我们把难度放低一点。小窍门：一行一行、从左到右慢慢看。';
+
+  qView.hidden=true;fbView.hidden=false;
+  $('btnNext').textContent=qNo>=TOTAL?'查看小结':'下一题';
+}
+
+function startQuestion(){
+  qNo++;updateChips();
+  qView.hidden=false;fbView.hidden=true;sumPanel.hidden=true;
+  renderGrid();
+  goMs=clock.elapsed();
+}
+function next(){qNo>=TOTAL?showSummary():startQuestion()}
+
+function showSummary(){
+  qView.hidden=true;fbView.hidden=true;sumPanel.hidden=false;
+  var acc=totTargets?Math.round(100*totHits/totTargets):0;
+  $('sumGrid').innerHTML=
+    '<div class="sumbox"><div class="v">'+session.q+'</div><div class="k">完成题数</div></div>'
+   +'<div class="sumbox"><div class="v">'+totTargets+'</div><div class="k">目标总数</div></div>'
+   +'<div class="sumbox"><div class="v">'+totHits+'</div><div class="k">正确找到</div></div>'
+   +'<div class="sumbox"><div class="v">'+totMiss+'</div><div class="k">遗漏</div></div>'
+   +'<div class="sumbox"><div class="v">'+totExtra+'</div><div class="k">误点</div></div>'
+   +'<div class="sumbox"><div class="v">'+fmtTime(Math.floor(clock.elapsed()/1000))+'</div><div class="k">训练时长</div></div>';
+  $('sumTip').textContent=acc>=80?'找得又快又准，做得很好！':'坚持找完就很棒，休息一下再练也可以。';
+}
+
+/* ================= 按钮事件 ================= */
+$('btnDone').onclick=submit;
+$('btnNext').onclick=next;
+$('btnAgain').onclick=function(){
+  clock.stop();clock=makeClock(timeEl);clock.start();
+  session=makeSession('找一找',clock);
+  qNo=0;totTargets=0;totHits=0;totMiss=0;totExtra=0;
+  startQuestion();
+};
+
+$('btnPause').onclick=function(){
+  if(paused)return;
+  paused=true;pauseTimers();clock.pause();
+  $('pauseMask').classList.add('show');
+};
+$('btnResume').onclick=function(){
+  paused=false;resumeTimers();clock.resume();
+  $('pauseMask').classList.remove('show');
+};
+$('btnRestart').onclick=function(){
+  askModal('要重新开始吗？本题会从头再来。',function(){
+    clock.stop();clock=makeClock(timeEl);clock.start();
+    session=makeSession('找一找',clock);
+    qNo=0;totTargets=0;totHits=0;totMiss=0;totExtra=0;
+    startQuestion();
+  });
+};
+$('btnHome').onclick=$('btnHome2').onclick=function(){
+  session.save();
+  location.href='index.html';
+};
+
+/* ================= 启动 ================= */
+clock.start();
+startQuestion();
+</script>
+</body>
+</html>

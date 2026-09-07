@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>生活顺序 · 认知训练</title>
+<style>
+/* ================= 基础样式（适老化：大字号、高对比、柔和配色） ================= */
+:root{
+  --bg:#F6F3EB; --card:#FFFFFF; --ink:#33302B; --muted:#7A7362;
+  --line:#DCD5C4; --blue:#2B6CB0; --blue-d:#245A93; --blue-bg:#EAF2FA;
+  --green:#2F7D51; --green-bg:#E8F3EC; --amber-line:#D89B3D; --amber-bg:#FFF3DF; --amber-ink:#7A5200;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:24px;line-height:1.65}
+.wrap{max-width:1080px;margin:0 auto;padding:22px 18px 90px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:4px}
+h1{font-size:38px;letter-spacing:2px;flex:1;min-width:260px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:64px;padding:10px 30px;font-size:28px;font-family:inherit;border-radius:14px;border:3px solid transparent;background:var(--blue);color:#fff;cursor:pointer;transition:background .2s;user-select:none}
+.btn:hover{background:var(--blue-d)}
+.btn.ghost{background:#fff;color:var(--blue);border-color:var(--blue)}
+.btn.ghost:hover{background:var(--blue-bg)}
+.btn.green{background:var(--green)}
+.btn.green:hover{background:#276A45}
+.btn:disabled{opacity:.4;cursor:default}
+.topbtn{min-height:60px;font-size:24px;padding:6px 20px;border-radius:12px}
+.status{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 16px}
+.chip{background:#fff;border:2px solid var(--line);border-radius:12px;padding:6px 18px;font-size:24px}
+.chip b{color:var(--blue)}
+.guide{font-size:26px;text-align:center;margin:4px 0 14px}
+.fb{display:none;border-radius:14px;padding:14px 20px;margin:14px 0;font-size:28px;line-height:1.5;text-align:center}
+.fb.show{display:block}
+.fb.ok{background:var(--green-bg);border:3px solid var(--green);color:#1F5B3B}
+.fb.warn{background:var(--amber-bg);border:3px solid var(--amber-line);color:var(--amber-ink)}
+.row{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:20px 0}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:24px;margin:10px 0}
+.center{text-align:center}
+.muted{color:var(--muted)}
+.taskname{font-size:36px;font-weight:bold;text-align:center;margin:6px 0 4px}
+
+/* ================= 双栏：候选步骤 / 我的顺序 ================= */
+.cols{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+.col{flex:1;min-width:340px;max-width:520px}
+.colh{font-size:26px;margin-bottom:10px;text-align:center;color:var(--muted)}
+.cands{display:grid;gap:12px}
+.stepb{width:100%;min-height:64px;font-size:26px;font-family:inherit;border-radius:12px;border:3px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;padding:8px 16px;text-align:left;transition:border-color .2s,background .2s;user-select:none}
+.stepb:hover{border-color:var(--blue)}
+.stepb.cue{border-color:var(--green);background:var(--green-bg)}
+.slots{display:grid;gap:12px}
+.slot{min-height:64px;border:3px dashed var(--line);border-radius:12px;display:flex;align-items:center;gap:14px;padding:8px 16px;background:#fff;font-size:26px}
+.slot .no{flex:none;width:44px;height:44px;border-radius:50%;background:#EFEAE0;color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:24px}
+.slot.filled{border-style:solid;border-color:var(--blue);background:var(--blue-bg)}
+.slot.filled .no{background:var(--blue);color:#fff}
+.slot.wrong{border-color:var(--amber-line);background:var(--amber-bg)}
+/* 正确顺序揭晓 */
+.anslist{display:grid;gap:10px;max-width:560px;margin:0 auto}
+.ansrow{display:flex;align-items:center;gap:14px;background:#fff;border:3px solid var(--green);border-radius:12px;padding:8px 16px;font-size:26px}
+.ansrow .no{flex:none;width:44px;height:44px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px}
+
+/* ================= 小结面板 ================= */
+.sumgrid{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:14px 0}
+.sumbox{background:#fff;border:2px solid var(--line);border-radius:14px;padding:14px 24px;text-align:center;min-width:170px}
+.sumbox .v{font-size:38px;font-weight:bold;color:var(--blue)}
+.sumbox .k{font-size:24px;color:var(--muted)}
+
+/* ================= 遮罩与对话框 ================= */
+.mask{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.mask.show{display:flex}
+.pausemask{background:rgba(246,243,235,.97)}
+.askmask{background:rgba(46,44,38,.5)}
+.modal{background:#fff;border-radius:18px;padding:30px 28px;max-width:580px;width:100%;text-align:center;box-shadow:0 6px 30px rgba(0,0,0,.25)}
+.modal p{margin-bottom:22px;font-size:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>📋 生活顺序</h1>
+    <button class="btn ghost topbtn" id="btnPause">⏸ 暂停</button>
+    <button class="btn ghost topbtn" id="btnRestart">↻ 重新开始</button>
+    <button class="btn ghost topbtn" id="btnHome">🏠 返回首页</button>
+  </div>
+
+  <div class="status">
+    <span class="chip">难度：<b id="stLevel">简单</b></span>
+    <span class="chip">题目：<b id="stQ">0 / 6</b></span>
+    <span class="chip">用时：<b id="stTime">0分00秒</b></span>
+  </div>
+
+  <main>
+    <!-- 答题区 -->
+    <section id="qView">
+      <p class="taskname" id="taskName"></p>
+      <p class="guide">请按做这件事的先后顺序，依次点击下面的步骤。</p>
+
+      <div class="cols">
+        <div class="col">
+          <div class="colh">可选择的步骤</div>
+          <div class="cands" id="cands"></div>
+        </div>
+        <div class="col">
+          <div class="colh">我的顺序</div>
+          <div class="slots" id="slots"></div>
+        </div>
+      </div>
+
+      <div class="fb" id="fb"></div>
+
+      <div class="row">
+        <button class="btn ghost" id="btnUndo">↶ 撤销一步</button>
+        <button class="btn ghost" id="btnHint">💡 提示（每题一次）</button>
+        <button class="btn green" id="btnConfirm" disabled>✔ 确认顺序</button>
+        <button class="btn green" id="btnNextQ" hidden>下一题</button>
+      </div>
+    </section>
+
+    <!-- 揭晓正确顺序 -->
+    <section id="revealView" hidden>
+      <p class="guide">正确的顺序是这样的：</p>
+      <div class="anslist" id="ansList"></div>
+      <div class="row"><button class="btn green" id="btnNextQ2">下一题</button></div>
+    </section>
+
+    <!-- 本轮小结 -->
+    <div class="panel" id="sumPanel" hidden>
+      <h2 class="center" style="font-size:36px;margin-bottom:6px">🎉 本轮训练完成</h2>
+      <div class="sumgrid" id="sumGrid"></div>
+      <p class="muted center" id="sumTip" style="font-size:24px"></p>
+      <div class="row">
+        <button class="btn green" id="btnAgain">再来一轮</button>
+        <button class="btn ghost" id="btnHome2">返回首页</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 暂停遮罩 -->
+<div class="mask pausemask" id="pauseMask">
+  <div class="modal">
+    <p>⏸ 已暂停</p>
+    <p class="muted" style="font-size:24px;margin-top:-14px">休息一下，准备好了再继续。</p>
+    <div class="row" style="margin-bottom:0"><button class="btn" id="btnResume">继续</button></div>
+  </div>
+</div>
+
+<!-- 确认对话框 -->
+<div class="mask askmask" id="askMask">
+  <div class="modal">
+    <p id="askText"></p>
+    <div class="row" style="margin-bottom:0">
+      <button class="btn" id="askYes">是的</button>
+      <button class="btn ghost" id="askNo">先不了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   通用部分：本机存储 / 可暂停计时器 / 训练时钟 / 难度自适应 / 记录
+   ============================================================ */
+var store={
+  get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+var RECORDS_KEY='ctt_records';
+
+function upsertRecord(rec){
+  var list=store.get(RECORDS_KEY,[]);
+  var i=-1;
+  for(var k=0;k<list.length;k++){if(list[k].sid===rec.sid){i=k;break}}
+  if(i>=0)list[i]=rec;else list.unshift(rec);
+  store.set(RECORDS_KEY,list);
+}
+
+/* ---- 可暂停延时器：暂停时记住剩余时间，恢复后继续 ---- */
+var paused=false;
+var pendingTimers=[];
+function later(ms,fn){
+  var h={remain:ms,fn:fn,id:null,end:Date.now()+ms};
+  h.fire=function(){
+    for(var i=0;i<pendingTimers.length;i++){if(pendingTimers[i]===h){pendingTimers.splice(i,1);break}}
+    fn();
+  };
+  h.id=setTimeout(h.fire,ms);
+  pendingTimers.push(h);
+}
+function clearPendingTimers(){
+  pendingTimers.forEach(function(h){clearTimeout(h.id)});
+  pendingTimers=[];
+}
+function pauseTimers(){pendingTimers.forEach(function(h){clearTimeout(h.id);h.remain=Math.max(0,h.end-Date.now())})}
+function resumeTimers(){pendingTimers.forEach(function(h){h.end=Date.now()+h.remain;h.id=setTimeout(h.fire,h.remain)})}
+
+/* ---- 训练时钟：自动扣除暂停时间 ---- */
+function fmtTime(sec){
+  var m=Math.floor(sec/60),s=Math.floor(sec%60);
+  return m+'分'+(s<10?'0':'')+s+'秒';
+}
+function makeClock(el){
+  var run=0,last=null,iv=null;
+  function tick(){
+    if(last!==null){run+=Date.now()-last;last=Date.now()}
+    if(el)el.textContent=fmtTime(Math.floor(run/1000));
+  }
+  return{
+    start:function(){if(iv)return;last=Date.now();iv=setInterval(tick,500);tick()},
+    stop:function(){if(iv){clearInterval(iv);iv=null}last=null},
+    pause:function(){if(last!==null){run+=Date.now()-last;last=null}},
+    resume:function(){if(last===null)last=Date.now()},
+    elapsed:function(){return run+(last!==null?(Date.now()-last):0)}
+  };
+}
+
+/* ---- 难度自适应：最近5题平均≥80%升一级、<60%降一级；连错3次提示并降级 ---- */
+function makeEngine(key,maxLv,names){
+  var st=store.get(key,{lv:1,hist:[],streak:0});
+  function save(){store.set(key,st)}
+  return{
+    get lv(){return st.lv},
+    get name(){return names[st.lv-1]},
+    answer:function(score){
+      st.hist.push(score);if(st.hist.length>5)st.hist.shift();
+      var delta=0;
+      if(st.hist.length>=3){
+        var avg=0;for(var i=0;i<st.hist.length;i++)avg+=st.hist[i];
+        avg/=st.hist.length;
+        if(avg>=0.8)delta=1;else if(avg<0.6)delta=-1;
+      }
+      if(score<0.5)st.streak++;else st.streak=0;
+      var hint=false;
+      if(st.streak>=3){hint=true;delta=-1;st.streak=0}
+      if(delta>0&&st.lv<maxLv)st.lv++;
+      else if(delta<0&&st.lv>1)st.lv--;
+      save();return{delta:delta,hint:hint};
+    }
+  };
+}
+
+/* ---- 一次训练会话：边玩边保存，记录只存在本机 ---- */
+function makeSession(game,clock){
+  var S={sid:Date.now()+'-'+Math.floor(Math.random()*1e4),game:game,q:0,scoreSum:0,correct:0,rtSum:0,rtN:0,notes:[],lvName:''};
+  return{
+    push:function(score,rt,note,lvName){
+      S.q++;S.scoreSum+=score;
+      if(score>=0.8)S.correct++;
+      if(rt>0){S.rtSum+=rt;S.rtN++}
+      if(note)S.notes.push(note);
+      if(lvName)S.lvName=lvName;
+      this.save();
+    },
+    save:function(){
+      if(S.q<1)return;
+      upsertRecord({
+        sid:S.sid,t:new Date().toISOString(),game:S.game,levelName:S.lvName,
+        questions:S.q,correct:S.correct,acc:Math.round(100*S.scoreSum/S.q),
+        avgRT:S.rtN?+(S.rtSum/S.rtN).toFixed(1):-1,
+        dur:Math.max(1,Math.round(clock.elapsed()/1000)),
+        note:S.notes.slice(-4).join('；')
+      });
+    },
+    get q(){return S.q}
+  };
+}
+
+/* ---- 确认对话框 ---- */
+var askYes=null;
+function askModal(text,cb){
+  document.getElementById('askText').textContent=text;
+  askYes=cb;document.getElementById('askMask').classList.add('show');
+}
+document.getElementById('askYes').onclick=function(){
+  document.getElementById('askMask').classList.remove('show');
+  if(askYes){var f=askYes;askYes=null;f()}
+};
+document.getElementById('askNo').onclick=function(){document.getElementById('askMask').classList.remove('show');askYes=null};
+
+/* ============================================================
+   游戏部分：《生活顺序》
+   ============================================================ */
+
+/* 24 组日常生活任务：顺序明确、不易产生争议 */
+var TASKS=[
+  /* 3 步 */
+  {n:'喝一杯水',s:['拿起杯子','倒上水','慢慢喝下']},
+  {n:'吃药',s:['倒一杯温水','取出药片','把药吃下']},
+  {n:'接电话',s:['听到电话铃响','拿起电话','接听通话']},
+  {n:'出门散步',s:['换上出门的鞋子','带好钥匙','出门散步']},
+  {n:'听广播',s:['打开收音机','调到喜欢的频道','收听节目']},
+  /* 4 步 */
+  {n:'泡一杯茶',s:['准备杯子','放入茶叶','倒入热水','稍等片刻']},
+  {n:'刷牙',s:['拿出牙刷','挤上牙膏','刷牙','漱口']},
+  {n:'洗手',s:['打开水龙头','抹上肥皂','搓洗双手','关水并擦干']},
+  {n:'寄一封信',s:['写好信','装入信封','贴上邮票','投进邮筒']},
+  {n:'蒸米饭',s:['淘好大米','把米放进锅里','加适量的水','按下煮饭开关']},
+  {n:'晾衣服',s:['洗好衣服','把衣服抖开','挂上衣架','晾到阳台']},
+  {n:'招待客人',s:['听到敲门声','开门请客人进来','请客人坐下','倒茶招待']},
+  /* 5 步 */
+  {n:'外出购物',s:['准备购物清单','带好钥匙和钱包','前往商店','购买需要的物品','回家整理物品']},
+  {n:'做西红柿炒蛋',s:['洗净西红柿','打好鸡蛋','切好西红柿','下锅翻炒','装盘']},
+  {n:'用洗衣机洗衣服',s:['把衣服放进洗衣机','倒入洗衣液','选择洗涤模式','启动洗衣机','晾晒衣服']},
+  {n:'去公园锻炼',s:['穿上运动服','带上水壶','走到公园','做热身活动','开始锻炼']},
+  {n:'种一盆花',s:['准备好花盆和土','往花盆里装土','埋入种子','浇上水','放到有阳光的地方']},
+  {n:'包饺子',s:['准备好饺子皮','调好馅料','包成饺子','烧水煮饺子','捞出装盘']},
+  /* 6 步 */
+  {n:'去医院看病',s:['带上医保卡','挂号','在候诊区等候','医生看诊','缴费取药','回家休息']},
+  {n:'坐公交车去朋友家',s:['走到公交车站','看清要坐的线路','上车刷卡','找座位坐好','听报站后下车','走到朋友家']},
+  {n:'做一顿晚饭',s:['想好菜单','淘米蒸饭','洗菜切菜','炒菜','摆好碗筷','一起吃饭']},
+  {n:'睡前准备',s:['收拾好客厅','洗漱','定好闹钟','检查门窗','关灯','上床睡觉']},
+  {n:'去银行取钱',s:['带上银行卡','到银行取号','输入密码','取出钱款','收好银行卡','离开银行']},
+  {n:'用相机拍照留念',s:['拿出相机','打开电源','对准要拍的人或物','按下快门','查看照片','关闭相机']}
+];
+
+var STEPS_BY_LV=[3,4,5,6];   /* 各难度对应的步骤数 */
+var LV_NAMES=['简单（3步）','中等（4步）','较难（5步）','高级（6步）'];
+var TOTAL=6;                 /* 每轮 6 题 */
+
+var engine=makeEngine('ctt_state_4',4,LV_NAMES);
+var timeEl=document.getElementById('stTime');
+var clock=makeClock(timeEl);
+var session=makeSession('生活顺序',clock);
+
+/* 题库：每个难度一份打乱的任务队列，用完再重洗 */
+var pools={};
+var lastTaskName='';
+
+var qNo=0,task=null,candOrder=[],order=[],confirmTries=0,hintUsed=false,goMs=0;
+var hintCount=0,firstTryCount=0;
+
+var $=function(id){return document.getElementById(id)};
+var qView=$('qView'),revealView=$('revealView'),sumPanel=$('sumPanel');
+
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+
+function takeTask(){
+  var need=STEPS_BY_LV[engine.lv-1];
+  if(!pools[need])pools[need]=[];
+  if(pools[need].length===0){
+    pools[need]=shuffle(TASKS.filter(function(t){return t.s.length===need}).slice());
+  }
+  var t=pools[need].pop();
+  if(t.n===lastTaskName&&pools[need].length>0){   /* 尽量不连续出同一题 */
+    pools[need].unshift(t);
+    t=pools[need].pop();
+  }
+  lastTaskName=t.n;
+  return t;
+}
+
+function updateChips(){
+  $('stLevel').textContent=engine.name;
+  $('stQ').textContent=qNo+' / '+TOTAL;
+}
+function showFb(msg,cls){
+  var fb=$('fb');fb.textContent=msg;fb.className='fb show '+(cls||'warn');
+}
+function hideFb(){$('fb').className='fb'}
+
+/* 渲染候选步骤（未点过的）与“我的顺序” */
+function render(){
+  var cd=$('cands');cd.innerHTML='';
+  candOrder.forEach(function(si){
+    if(order.indexOf(si)>=0)return;
+    var b=document.createElement('button');
+    b.type='button';b.className='stepb';
+    b.textContent=task.s[si];
+    b.onclick=function(){pickStep(si)};
+    if(si===cueStep)b.classList.add('cue');
+    cd.appendChild(b);
+  });
+
+  var sl=$('slots');sl.innerHTML='';
+  for(var i=0;i<task.s.length;i++){
+    var d=document.createElement('div');
+    d.className='slot'+(i<order.length?' filled':'')+(wrongFrom>=0&&i>=wrongFrom&&i<order.length?' wrong':'');
+    d.innerHTML='<span class="no">'+(i+1)+'</span>'
+      +(i<order.length?('<span>'+task.s[order[i]]+'</span>'):'<span class="muted">第'+(i+1)+'步</span>');
+    sl.appendChild(d);
+  }
+
+  $('btnConfirm').disabled=order.length!==task.s.length;
+  $('btnUndo').disabled=order.length===0;
+}
+
+var cueStep=-1,wrongFrom=-1;   /* 提示高亮的步骤 / 标错的起始位置 */
+
+function pickStep(si){
+  if(paused)return;
+  if(order.length>=task.s.length)return;
+  order.push(si);
+  if(cueStep===si)cueStep=-1;
+  render();
+}
+
+function startQuestion(){
+  qNo++;
+  task=takeTask();
+  candOrder=shuffle(task.s.map(function(_,i){return i}));
+  order=[];confirmTries=0;hintUsed=false;cueStep=-1;wrongFrom=-1;
+  hideFb();
+  $('btnHint').disabled=false;
+  $('btnNextQ').hidden=true;
+  $('btnConfirm').hidden=false;$('btnUndo').hidden=false;$('btnHint').hidden=false;
+  qView.hidden=false;revealView.hidden=true;sumPanel.hidden=true;
+  $('taskName').textContent='任务：'+task.n;
+  updateChips();
+  render();
+  goMs=clock.elapsed();
+}
+
+/* ---- 确认顺序 ---- */
+function confirmOrder(){
+  if(paused||order.length!==task.s.length)return;
+  confirmTries++;
+  var wrong=-1;
+  for(var i=0;i<task.s.length;i++){
+    if(task.s[order[i]]!==task.s[i]){wrong=i;break}
+  }
+
+  if(wrong<0){
+    /* 全部正确 */
+    var rt=(clock.elapsed()-goMs)/1000;
+    var score, msg;
+    if(confirmTries===1&&!hintUsed){score=1;firstTryCount++;msg='完全正确，一次就排对了！👍'}
+    else{score=0.6;msg='排对了，做得好！👍'}
+    var res=engine.answer(score);
+    session.push(score,rt,hintUsed?'用过提示':'',engine.name);
+    showFb(msg+(res.hint?' 连着几题不太顺利，我们把难度放低一点，不着急。':''),'ok');
+    $('btnConfirm').hidden=true;$('btnUndo').hidden=true;$('btnHint').hidden=true;
+    $('btnNextQ').hidden=false;
+    $('btnNextQ').textContent=qNo>=TOTAL?'查看小结':'下一题';
+    return;
+  }
+
+  if(confirmTries===1){
+    /* 第一次不对：提示一句，把排错位置之后的步骤退回去再想想 */
+    showFb('有几个步骤的位置可以再想一想。','warn');
+    wrongFrom=wrong;
+    render();
+    later(1400,function(){
+      for(var i=order.length-1;i>=wrong;i--)order.pop();   /* 退回第一处错误之后的步骤 */
+      wrongFrom=-1;
+      hideFb();
+      render();
+    });
+  }else{
+    /* 第二次不对：温和地揭晓正确顺序 */
+    var rt2=(clock.elapsed()-goMs)/1000;
+    engine.answer(0.3);
+    session.push(0.3,rt2,'看过答案',engine.name);
+    var al=$('ansList');al.innerHTML='';
+    task.s.forEach(function(st,i){
+      al.innerHTML+='<div class="ansrow"><span class="no">'+(i+1)+'</span><span>'+st+'</span></div>';
+    });
+    qView.hidden=true;revealView.hidden=false;
+    $('btnNextQ2').textContent=qNo>=TOTAL?'查看小结':'下一题';
+  }
+}
+
+/* ---- 提示：只指出第一个还没排对的步骤，不给出全部答案 ---- */
+function useHint(){
+  if(paused||hintUsed)return;
+  hintUsed=true;hintCount++;
+  $('btnHint').disabled=true;
+  /* 找到第一处还没排对的位置，把后面的步骤退回去 */
+  var idx=0;
+  while(idx<order.length&&task.s[order[idx]]===task.s[idx])idx++;
+  for(var i=order.length-1;i>=idx;i--)order.pop();
+  /* 现在要排的是第 order.length+1 步 */
+  var pos=order.length;
+  var stepName=task.s[pos];
+  cueStep=task.s.indexOf(stepName);
+  render();
+  showFb('提示：第'+(pos+1)+'步应该是「'+stepName+'」，从这一步再想一想。','warn');
+}
+
+function next(){
+  if(qNo>=TOTAL)showSummary();else startQuestion();
+}
+
+function showSummary(){
+  qView.hidden=true;revealView.hidden=true;sumPanel.hidden=false;
+  var rtNote=(hintCount>0)?('使用提示 '+hintCount+' 次'):'没有使用提示';
+  $('sumGrid').innerHTML=
+    '<div class="sumbox"><div class="v">'+session.q+'</div><div class="k">完成题数</div></div>'
+   +'<div class="sumbox"><div class="v">'+firstTryCount+'</div><div class="k">一次排对</div></div>'
+   +'<div class="sumbox"><div class="v">'+hintCount+'</div><div class="k">使用提示次数</div></div>'
+   +'<div class="sumbox"><div class="v">'+engine.name+'</div><div class="k">当前难度</div></div>'
+   +'<div class="sumbox"><div class="v">'+fmtTime(Math.floor(clock.elapsed()/1000))+'</div><div class="k">训练时长</div></div>';
+  $('sumTip').textContent=firstTryCount>=session.q*0.8?'一次就排对了大部分，规划能力很棒！'+rtNote+'。':'按顺序做完就很不错，'+rtNote+'，休息一下再练也可以。';
+}
+
+/* ================= 按钮事件 ================= */
+$('btnUndo').onclick=function(){
+  if(paused||order.length===0)return;
+  order.pop();render();
+};
+$('btnHint').onclick=useHint;
+$('btnConfirm').onclick=confirmOrder;
+$('btnNextQ').onclick=next;
+$('btnNextQ2').onclick=next;
+$('btnAgain').onclick=function(){
+  clock.stop();clock=makeClock(timeEl);clock.start();
+  session=makeSession('生活顺序',clock);
+  qNo=0;hintCount=0;firstTryCount=0;lastTaskName='';
+  startQuestion();
+};
+
+$('btnPause').onclick=function(){
+  if(paused)return;
+  paused=true;pauseTimers();clock.pause();
+  $('pauseMask').classList.add('show');
+};
+$('btnResume').onclick=function(){
+  paused=false;resumeTimers();clock.resume();
+  $('pauseMask').classList.remove('show');
+};
+$('btnRestart').onclick=function(){
+  askModal('要重新开始吗？本题会从头再来。',function(){
+    clock.stop();clock=makeClock(timeEl);clock.start();
+    session=makeSession('生活顺序',clock);
+    qNo=0;hintCount=0;firstTryCount=0;lastTaskName='';
+    startQuestion();
+  });
+};
+$('btnHome').onclick=$('btnHome2').onclick=function(){
+  session.save();
+  location.href='index.html';
+};
+
+/* ================= 启动 ================= */
+clock.start();
+startQuestion();
+</script>
+</body>
+</html>

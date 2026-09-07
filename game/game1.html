@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>记忆翻牌 · 认知训练</title>
+<style>
+/* ================= 基础样式（适老化：大字号、高对比、柔和配色） ================= */
+:root{
+  --bg:#F6F3EB; --card:#FFFFFF; --ink:#33302B; --muted:#7A7362;
+  --line:#DCD5C4; --blue:#2B6CB0; --blue-d:#245A93; --blue-bg:#EAF2FA;
+  --green:#2F7D51; --green-bg:#E8F3EC; --amber-line:#D89B3D; --amber-bg:#FFF3DF; --amber-ink:#7A5200;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:24px;line-height:1.65}
+.wrap{max-width:1020px;margin:0 auto;padding:22px 18px 90px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:4px}
+h1{font-size:38px;letter-spacing:2px;flex:1;min-width:260px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:64px;padding:10px 30px;font-size:28px;font-family:inherit;border-radius:14px;border:3px solid transparent;background:var(--blue);color:#fff;cursor:pointer;transition:background .2s;user-select:none}
+.btn:hover{background:var(--blue-d)}
+.btn.ghost{background:#fff;color:var(--blue);border-color:var(--blue)}
+.btn.ghost:hover{background:var(--blue-bg)}
+.btn.green{background:var(--green)}
+.btn.green:hover{background:#276A45}
+.topbtn{min-height:60px;font-size:24px;padding:6px 20px;border-radius:12px}
+.status{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 16px}
+.chip{background:#fff;border:2px solid var(--line);border-radius:12px;padding:6px 18px;font-size:24px}
+.chip b{color:var(--blue)}
+.guide{font-size:28px;text-align:center;margin:6px 0 18px}
+.fb{display:none;border-radius:14px;padding:14px 20px;margin:16px 0;font-size:28px;line-height:1.5;text-align:center}
+.fb.show{display:block}
+.fb.ok{background:var(--green-bg);border:3px solid var(--green);color:#1F5B3B}
+.fb.warn{background:var(--amber-bg);border:3px solid var(--amber-line);color:var(--amber-ink)}
+.row{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:20px 0}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:24px;margin:10px 0}
+.center{text-align:center}
+.muted{color:var(--muted)}
+
+/* ================= 卡片区 ================= */
+.board{display:grid;gap:14px;justify-content:center;margin:8px 0 10px}
+.card{position:relative;width:150px;height:186px;cursor:pointer;background:transparent;border:none;padding:0;font-family:inherit}
+.face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:16px;border:3px solid var(--line);background:#fff;transition:opacity .3s;user-select:none}
+.face .emoji{font-size:64px;line-height:1.2}
+.face .name{font-size:24px}
+.face.backc{background:var(--blue);border-color:var(--blue-d);color:#fff;font-size:58px}
+.card .front{opacity:0}
+.card.up .front{opacity:1}
+.card.up .backc{opacity:0}
+.card.matched .face{border-color:var(--green);background:var(--green-bg)}
+.card.matched .face.backc{background:var(--blue)}
+.card.matched{cursor:default}
+
+/* ================= 小结面板 ================= */
+.sumgrid{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:14px 0}
+.sumbox{background:#fff;border:2px solid var(--line);border-radius:14px;padding:14px 26px;text-align:center;min-width:170px}
+.sumbox .v{font-size:40px;font-weight:bold;color:var(--blue)}
+.sumbox .k{font-size:24px;color:var(--muted)}
+
+/* ================= 遮罩与对话框 ================= */
+.mask{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.mask.show{display:flex}
+.pausemask{background:rgba(246,243,235,.97)}
+.askmask{background:rgba(46,44,38,.5)}
+.modal{background:#fff;border-radius:18px;padding:30px 28px;max-width:580px;width:100%;text-align:center;box-shadow:0 6px 30px rgba(0,0,0,.25)}
+.modal p{margin-bottom:22px;font-size:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>🃏 记忆翻牌</h1>
+    <button class="btn ghost topbtn" id="btnPause">⏸ 暂停</button>
+    <button class="btn ghost topbtn" id="btnRestart">↻ 重新开始</button>
+    <button class="btn ghost topbtn" id="btnHome">🏠 返回首页</button>
+  </div>
+
+  <div class="status">
+    <span class="chip">难度：<b id="stLevel">简单</b></span>
+    <span class="chip">已找到：<b id="stFound">0 / 0</b> 对</span>
+    <span class="chip">尝试：<b id="stTry">0</b> 次</span>
+    <span class="chip">用时：<b id="stTime">0分00秒</b></span>
+  </div>
+
+  <main>
+    <p class="guide" id="guide">请记住卡片的位置，不用着急。</p>
+    <div class="board" id="board"></div>
+
+    <!-- 单轮小结 -->
+    <div class="panel" id="sumPanel" hidden>
+      <h2 class="center" style="font-size:36px;margin-bottom:6px">🎉 本轮完成</h2>
+      <div class="sumgrid" id="sumGrid"></div>
+      <div class="row">
+        <button class="btn green" id="btnNextRound">再来一轮</button>
+        <button class="btn ghost" id="btnHome2">返回首页</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 暂停遮罩 -->
+<div class="mask pausemask" id="pauseMask">
+  <div class="modal">
+    <p>⏸ 已暂停</p>
+    <p class="muted" style="font-size:24px;margin-top:-14px">休息一下，准备好了再继续。</p>
+    <div class="row" style="margin-bottom:0"><button class="btn" id="btnResume">继续</button></div>
+  </div>
+</div>
+
+<!-- 确认对话框 -->
+<div class="mask askmask" id="askMask">
+  <div class="modal">
+    <p id="askText"></p>
+    <div class="row" style="margin-bottom:0">
+      <button class="btn" id="askYes">是的</button>
+      <button class="btn ghost" id="askNo">先不了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   通用部分：本机存储 / 可暂停计时器 / 训练时钟 / 难度自适应 / 记录
+   ============================================================ */
+var store={
+  get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+var RECORDS_KEY='ctt_records';
+
+function upsertRecord(rec){
+  var list=store.get(RECORDS_KEY,[]);
+  var i=-1;
+  for(var k=0;k<list.length;k++){if(list[k].sid===rec.sid){i=k;break}}
+  if(i>=0)list[i]=rec;else list.unshift(rec);
+  store.set(RECORDS_KEY,list);
+}
+
+/* ---- 可暂停延时器：暂停时记住剩余时间，恢复后继续 ---- */
+var paused=false;
+var pendingTimers=[];
+function later(ms,fn){
+  var h={remain:ms,fn:fn,id:null,end:Date.now()+ms};
+  h.fire=function(){
+    for(var i=0;i<pendingTimers.length;i++){if(pendingTimers[i]===h){pendingTimers.splice(i,1);break}}
+    fn();
+  };
+  h.id=setTimeout(h.fire,ms);
+  pendingTimers.push(h);
+}
+function clearPendingTimers(){
+  pendingTimers.forEach(function(h){clearTimeout(h.id)});
+  pendingTimers=[];
+}
+function pauseTimers(){pendingTimers.forEach(function(h){clearTimeout(h.id);h.remain=Math.max(0,h.end-Date.now())})}
+function resumeTimers(){pendingTimers.forEach(function(h){h.end=Date.now()+h.remain;h.id=setTimeout(h.fire,h.remain)})}
+
+/* ---- 训练时钟：自动扣除暂停时间 ---- */
+function fmtTime(sec){
+  var m=Math.floor(sec/60),s=Math.floor(sec%60);
+  return m+'分'+(s<10?'0':'')+s+'秒';
+}
+function makeClock(el){
+  var run=0,last=null,iv=null;
+  function tick(){
+    if(last!==null){run+=Date.now()-last;last=Date.now()}
+    if(el)el.textContent=fmtTime(Math.floor(run/1000));
+  }
+  return{
+    start:function(){if(iv)return;last=Date.now();iv=setInterval(tick,500);tick()},
+    pause:function(){if(last!==null){run+=Date.now()-last;last=null}},
+    resume:function(){if(last===null)last=Date.now()},
+    elapsed:function(){var t=run+(last!==null?(Date.now()-last):0);return t}
+  };
+}
+
+/* ---- 难度自适应：最近5题平均≥80%升一级、<60%降一级；连错3次提示并降级 ---- */
+function makeEngine(key,maxLv,names){
+  var st=store.get(key,{lv:1,hist:[],streak:0});
+  function save(){store.set(key,st)}
+  return{
+    get lv(){return st.lv},
+    get name(){return names[st.lv-1]},
+    answer:function(score){
+      st.hist.push(score);if(st.hist.length>5)st.hist.shift();
+      var delta=0;
+      if(st.hist.length>=3){
+        var avg=0;for(var i=0;i<st.hist.length;i++)avg+=st.hist[i];
+        avg/=st.hist.length;
+        if(avg>=0.8)delta=1;else if(avg<0.6)delta=-1;
+      }
+      if(score<0.5)st.streak++;else st.streak=0;
+      var hint=false;
+      if(st.streak>=3){hint=true;delta=-1;st.streak=0}
+      if(delta>0&&st.lv<maxLv)st.lv++;
+      else if(delta<0&&st.lv>1)st.lv--;
+      save();return{delta:delta,hint:hint};
+    }
+  };
+}
+
+/* ---- 一次训练会话：边玩边保存，记录只存在本机 ---- */
+function makeSession(game,clock){
+  var S={sid:Date.now()+'-'+Math.floor(Math.random()*1e4),game:game,q:0,scoreSum:0,correct:0,rtSum:0,rtN:0,notes:[],lvName:''};
+  return{
+    push:function(score,rt,note,lvName){
+      S.q++;S.scoreSum+=score;
+      if(score>=0.8)S.correct++;
+      if(rt>0){S.rtSum+=rt;S.rtN++}
+      if(note)S.notes.push(note);
+      if(lvName)S.lvName=lvName;
+      this.save();
+    },
+    save:function(){
+      if(S.q<1)return;
+      upsertRecord({
+        sid:S.sid,t:new Date().toISOString(),game:S.game,levelName:S.lvName,
+        questions:S.q,correct:S.correct,acc:Math.round(100*S.scoreSum/S.q),
+        avgRT:S.rtN?+(S.rtSum/S.rtN).toFixed(1):-1,
+        dur:Math.max(1,Math.round(clock.elapsed()/1000)),
+        note:S.notes.slice(-4).join('；')
+      });
+    },
+    get q(){return S.q}
+  };
+}
+
+/* ---- 确认对话框 ---- */
+var askYes=null;
+function askModal(text,cb){
+  document.getElementById('askText').textContent=text;
+  askYes=cb;document.getElementById('askMask').classList.add('show');
+}
+document.getElementById('askYes').onclick=function(){
+  document.getElementById('askMask').classList.remove('show');
+  if(askYes){var f=askYes;askYes=null;f()}
+};
+document.getElementById('askNo').onclick=function(){document.getElementById('askMask').classList.remove('show');askYes=null};
+
+/* ============================================================
+   游戏部分：《记忆翻牌》
+   ============================================================ */
+
+/* 物品库：Emoji + 名称（图文并存，避免只靠图形识别） */
+var ITEMS=[
+  {e:'🍎',n:'苹果'},{e:'🍌',n:'香蕉'},{e:'🐱',n:'猫'},{e:'🐶',n:'狗'},
+  {e:'🚗',n:'汽车'},{e:'☕',n:'杯子'},{e:'🔑',n:'钥匙'},{e:'☂️',n:'雨伞'},
+  {e:'👟',n:'鞋子'},{e:'🌸',n:'花'},{e:'📖',n:'书'},{e:'⏰',n:'钟表'}
+];
+var PAIRS_BY_LV=[3,4,6,8];            /* 各难度的卡片对数 */
+var LV_NAMES=['简单','中等','较难','挑战'];
+
+var engine=makeEngine('ctt_state_1',4,LV_NAMES);
+var clock=makeClock(document.getElementById('stTime'));
+var session=makeSession('记忆翻牌',clock);
+
+/* 当前一轮的状态 */
+var cards=[];          /* {item, el, up, matched} */
+var pairs=3,found=0,attempts=0,firstPick=null,lock=true,missStreak=0;
+
+var $=function(id){return document.getElementById(id)};
+var boardEl=$('board'),guideEl=$('guide'),sumPanel=$('sumPanel');
+
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+
+function updateChips(){
+  $('stLevel').textContent=engine.name;
+  $('stFound').textContent=found+' / '+pairs;
+  $('stTry').textContent=attempts;
+}
+
+/* 开始新的一轮 */
+function newBoard(){
+  pairs=PAIRS_BY_LV[engine.lv-1];
+  found=0;attempts=0;firstPick=null;missStreak=0;
+  sumPanel.hidden=true;boardEl.hidden=false;
+  updateChips();
+
+  /* 随机选出本轮的物品，每种两张 */
+  var picked=shuffle(ITEMS.slice()).slice(0,pairs);
+  var deck=shuffle(picked.concat(picked));
+  cards=[];
+  boardEl.innerHTML='';
+  boardEl.style.gridTemplateColumns='repeat('+(deck.length>6?4:3)+',150px)';
+
+  deck.forEach(function(item){
+    var b=document.createElement('button');
+    b.className='card up';
+    b.type='button';
+    b.innerHTML='<span class="face front"><span class="emoji">'+item.e+'</span><span class="name">'+item.n+'</span></span>'
+               +'<span class="face backc">？</span>';
+    var card={item:item,el:b,up:true,matched:false};
+    b.onclick=function(){onCard(card)};
+    boardEl.appendChild(b);
+    cards.push(card);
+  });
+
+  lock=true;
+  guideEl.textContent='请记住卡片的位置，不用着急。';
+  /* 预览 3 秒后全部翻到背面 */
+  later(3000,startPlay);
+}
+
+function startPlay(){
+  cards.forEach(function(c){c.up=false;c.el.classList.remove('up')});
+  lock=false;
+  guideEl.textContent='请点击两张卡片，找出相同的一对。';
+}
+
+function onCard(c){
+  if(paused||lock||c.up||c.matched)return;
+  c.up=true;c.el.classList.add('up');
+
+  if(!firstPick){firstPick=c;return}
+
+  /* 翻开第二张：记一次尝试 */
+  var a=firstPick,b=c;firstPick=null;
+  attempts++;updateChips();
+
+  if(a.item.n===b.item.n){
+    a.matched=b.matched=true;
+    later(350,function(){
+      a.el.classList.add('matched');b.el.classList.add('matched');
+      found++;updateChips();
+      if(found===pairs)boardDone();
+    });
+  }else{
+    lock=true;
+    later(1200,function(){                       /* 不同：停留 1.2 秒后翻回 */
+      a.up=b.up=false;a.el.classList.remove('up');b.el.classList.remove('up');
+      lock=false;
+      missStreak++;
+      if(missStreak>=3){missStreak=0;hintPreview()}   /* 连续 3 次没配对：给一次提示 */
+    });
+  }
+}
+
+/* 提示：把没配对的卡片再给大家看 2 秒 */
+function hintPreview(){
+  lock=true;
+  guideEl.textContent='没关系，我们再一起看一下卡片的位置。';
+  var rest=cards.filter(function(c){return !c.matched});
+  rest.forEach(function(c){c.up=true;c.el.classList.add('up')});
+  later(2200,function(){
+    rest.forEach(function(c){if(!c.matched){c.up=false;c.el.classList.remove('up')}});
+    lock=false;
+    guideEl.textContent='请继续，慢慢来。';
+  });
+}
+
+/* 一轮结束：小结 + 自适应调难度 */
+function boardDone(){
+  var usedSec=clock.elapsed()/1000;
+  var score=Math.min(1,pairs/Math.max(1,attempts));
+  var res=engine.answer(score);
+  session.push(score,attempts>0?usedSec/attempts:0,
+    '配对'+pairs+'对，尝试'+attempts+'次',engine.name);
+
+  $('sumGrid').innerHTML=
+    '<div class="sumbox"><div class="v">'+pairs+' 对</div><div class="k">正确配对</div></div>'
+   +'<div class="sumbox"><div class="v">'+attempts+' 次</div><div class="k">尝试次数</div></div>'
+   +'<div class="sumbox"><div class="v">'+fmtTime(Math.floor(usedSec))+'</div><div class="k">本轮用时</div></div>'
+   +'<div class="sumbox"><div class="v">'+session.q+' 轮</div><div class="k">本次已完成</div></div>';
+  boardEl.hidden=true;sumPanel.hidden=false;guideEl.textContent='';
+
+  var tip=sumPanel.querySelector('.muted');
+  if(!tip){
+    tip=document.createElement('p');tip.className='muted center';tip.style.fontSize='24px';
+    sumPanel.insertBefore(tip,sumPanel.querySelector('.row'));
+  }
+  if(res.delta>0)tip.textContent='您完成得很好，下一轮卡片会稍微多一点点。';
+  else if(res.delta<0)tip.textContent='我们把难度放低一点，不着急，慢慢来。';
+  else tip.textContent='保持这个节奏就很棒。';
+}
+
+/* ================= 顶部按钮 ================= */
+$('btnPause').onclick=function(){
+  if(paused)return;
+  paused=true;pauseTimers();clock.pause();
+  $('pauseMask').classList.add('show');
+};
+$('btnResume').onclick=function(){
+  paused=false;resumeTimers();clock.resume();
+  $('pauseMask').classList.remove('show');
+};
+$('btnRestart').onclick=function(){
+  askModal('要重新开始吗？当前这一轮会重新发牌。',function(){newBoard()});
+};
+$('btnHome').onclick=$('btnHome2').onclick=function(){
+  session.save();
+  location.href='index.html';
+};
+$('btnNextRound').onclick=newBoard;
+
+/* ================= 启动 ================= */
+clock.start();
+newBoard();
+</script>
+</body>
+</html>

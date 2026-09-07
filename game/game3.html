@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>记住购物清单 · 认知训练</title>
+<style>
+/* ================= 基础样式（适老化：大字号、高对比、柔和配色） ================= */
+:root{
+  --bg:#F6F3EB; --card:#FFFFFF; --ink:#33302B; --muted:#7A7362;
+  --line:#DCD5C4; --blue:#2B6CB0; --blue-d:#245A93; --blue-bg:#EAF2FA;
+  --green:#2F7D51; --green-bg:#E8F3EC; --amber-line:#D89B3D; --amber-bg:#FFF3DF; --amber-ink:#7A5200;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:24px;line-height:1.65}
+.wrap{max-width:1020px;margin:0 auto;padding:22px 18px 90px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:4px}
+h1{font-size:38px;letter-spacing:2px;flex:1;min-width:260px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:64px;padding:10px 30px;font-size:28px;font-family:inherit;border-radius:14px;border:3px solid transparent;background:var(--blue);color:#fff;cursor:pointer;transition:background .2s;user-select:none}
+.btn:hover{background:var(--blue-d)}
+.btn.ghost{background:#fff;color:var(--blue);border-color:var(--blue)}
+.btn.ghost:hover{background:var(--blue-bg)}
+.btn.green{background:var(--green)}
+.btn.green:hover{background:#276A45}
+.topbtn{min-height:60px;font-size:24px;padding:6px 20px;border-radius:12px}
+.status{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 16px}
+.chip{background:#fff;border:2px solid var(--line);border-radius:12px;padding:6px 18px;font-size:24px}
+.chip b{color:var(--blue)}
+.guide{font-size:28px;text-align:center;margin:4px 0 16px}
+.fb{display:none;border-radius:14px;padding:14px 20px;margin:14px 0;font-size:28px;line-height:1.5;text-align:center}
+.fb.show{display:block}
+.fb.ok{background:var(--green-bg);border:3px solid var(--green);color:#1F5B3B}
+.fb.warn{background:var(--amber-bg);border:3px solid var(--amber-line);color:var(--amber-ink)}
+.row{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:20px 0}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:24px;margin:10px 0}
+.center{text-align:center}
+.muted{color:var(--muted)}
+
+/* ================= 第一阶段：购物清单 ================= */
+.list{display:flex;flex-direction:column;gap:14px;max-width:560px;margin:0 auto}
+.lrow{display:flex;align-items:center;gap:20px;background:#fff;border:3px solid var(--line);border-radius:16px;padding:10px 24px}
+.lrow .le{font-size:64px;line-height:1.2}
+.lrow .ln{font-size:34px}
+.pbar{height:16px;background:#E5DFD0;border-radius:8px;overflow:hidden;max-width:560px;margin:18px auto 6px}
+.pbar i{display:block;height:100%;width:0;background:var(--blue);border-radius:8px;animation:pgrow 8s linear forwards}
+body.paused .pbar i{animation-play-state:paused}
+@keyframes pgrow{from{width:0}to{width:100%}}
+
+/* ================= 第二阶段：候选物品 ================= */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;max-width:920px;margin:0 auto}
+.item{position:relative;min-height:150px;border:4px solid var(--line);border-radius:16px;background:#fff;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 8px 26px;transition:border-color .2s,background .2s;user-select:none}
+.item .ie{font-size:60px;line-height:1.2}
+.item .in{font-size:26px}
+.item:hover{border-color:var(--blue)}
+.item.sel{border-color:var(--blue);background:var(--blue-bg);border-width:5px}
+.item .tick{position:absolute;top:8px;right:10px;font-size:30px;color:var(--blue);display:none}
+.item.sel .tick{display:block}
+/* 反馈状态 */
+.item.hit{border-color:var(--green);background:var(--green-bg);cursor:default}
+.item.miss{border-style:dashed;border-color:var(--amber-line);background:var(--amber-bg);cursor:default}
+.item.extra{border-color:var(--amber-line);background:var(--amber-bg);cursor:default}
+.item .badge{display:none;position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:24px;line-height:1.3}
+.item.hit .badge{display:block;color:#1F5B3B}
+.item.miss .badge{display:block;color:var(--amber-ink)}
+.item.extra .badge{display:block;color:var(--amber-ink)}
+
+/* ================= 小结面板 ================= */
+.sumgrid{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:14px 0}
+.sumbox{background:#fff;border:2px solid var(--line);border-radius:14px;padding:14px 24px;text-align:center;min-width:170px}
+.sumbox .v{font-size:38px;font-weight:bold;color:var(--blue)}
+.sumbox .k{font-size:24px;color:var(--muted)}
+
+/* ================= 遮罩与对话框 ================= */
+.mask{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.mask.show{display:flex}
+.pausemask{background:rgba(246,243,235,.97)}
+.askmask{background:rgba(46,44,38,.5)}
+.modal{background:#fff;border-radius:18px;padding:30px 28px;max-width:580px;width:100%;text-align:center;box-shadow:0 6px 30px rgba(0,0,0,.25)}
+.modal p{margin-bottom:22px;font-size:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>🛒 记住购物清单</h1>
+    <button class="btn ghost topbtn" id="btnPause">⏸ 暂停</button>
+    <button class="btn ghost topbtn" id="btnRestart">↻ 重新开始</button>
+    <button class="btn ghost topbtn" id="btnHome">🏠 返回首页</button>
+  </div>
+
+  <div class="status">
+    <span class="chip">难度：<b id="stLevel">简单</b></span>
+    <span class="chip">题目：<b id="stQ">0 / 8</b></span>
+    <span class="chip">用时：<b id="stTime">0分00秒</b></span>
+  </div>
+
+  <main>
+    <!-- 第一阶段：看清单（8 秒） -->
+    <section id="phase1">
+      <p class="guide">请记住这些东西，不用着急。</p>
+      <div class="list" id="listBox"></div>
+      <div class="pbar"><i id="pfill"></i></div>
+      <p class="muted center" style="font-size:24px">8 秒后自动进入下一页，也可以先在心里念一遍。</p>
+    </section>
+
+    <!-- 第二阶段：挑选 -->
+    <section id="phase2" hidden>
+      <p class="guide">下面哪些东西刚才在清单里？<br>请点击您记得的，选好后按下面的按钮。</p>
+      <div class="grid" id="grid"></div>
+      <div class="row">
+        <button class="btn green" id="btnDone" disabled>✅ 我选好了</button>
+      </div>
+    </section>
+
+    <!-- 反馈 -->
+    <section id="phaseFB" hidden>
+      <div class="fb" id="fb"></div>
+      <div class="grid" id="gridFB"></div>
+      <div class="row">
+        <button class="btn green" id="btnNext">下一题</button>
+      </div>
+    </section>
+
+    <!-- 本轮小结 -->
+    <div class="panel" id="sumPanel" hidden>
+      <h2 class="center" style="font-size:36px;margin-bottom:6px">🎉 本轮训练完成</h2>
+      <div class="sumgrid" id="sumGrid"></div>
+      <p class="muted center" id="sumTip" style="font-size:24px"></p>
+      <div class="row">
+        <button class="btn green" id="btnAgain">再来一轮</button>
+        <button class="btn ghost" id="btnHome2">返回首页</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 暂停遮罩 -->
+<div class="mask pausemask" id="pauseMask">
+  <div class="modal">
+    <p>⏸ 已暂停</p>
+    <p class="muted" style="font-size:24px;margin-top:-14px">休息一下，准备好了再继续。</p>
+    <div class="row" style="margin-bottom:0"><button class="btn" id="btnResume">继续</button></div>
+  </div>
+</div>
+
+<!-- 确认对话框 -->
+<div class="mask askmask" id="askMask">
+  <div class="modal">
+    <p id="askText"></p>
+    <div class="row" style="margin-bottom:0">
+      <button class="btn" id="askYes">是的</button>
+      <button class="btn ghost" id="askNo">先不了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   通用部分：本机存储 / 可暂停计时器 / 训练时钟 / 难度自适应 / 记录
+   ============================================================ */
+var store={
+  get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+var RECORDS_KEY='ctt_records';
+
+function upsertRecord(rec){
+  var list=store.get(RECORDS_KEY,[]);
+  var i=-1;
+  for(var k=0;k<list.length;k++){if(list[k].sid===rec.sid){i=k;break}}
+  if(i>=0)list[i]=rec;else list.unshift(rec);
+  store.set(RECORDS_KEY,list);
+}
+
+/* ---- 可暂停延时器：暂停时记住剩余时间，恢复后继续 ---- */
+var paused=false;
+var pendingTimers=[];
+function later(ms,fn){
+  var h={remain:ms,fn:fn,id:null,end:Date.now()+ms};
+  h.fire=function(){
+    for(var i=0;i<pendingTimers.length;i++){if(pendingTimers[i]===h){pendingTimers.splice(i,1);break}}
+    fn();
+  };
+  h.id=setTimeout(h.fire,ms);
+  pendingTimers.push(h);
+}
+function clearPendingTimers(){
+  pendingTimers.forEach(function(h){clearTimeout(h.id)});
+  pendingTimers=[];
+}
+function pauseTimers(){pendingTimers.forEach(function(h){clearTimeout(h.id);h.remain=Math.max(0,h.end-Date.now())})}
+function resumeTimers(){pendingTimers.forEach(function(h){h.end=Date.now()+h.remain;h.id=setTimeout(h.fire,h.remain)})}
+
+/* ---- 训练时钟：自动扣除暂停时间 ---- */
+function fmtTime(sec){
+  var m=Math.floor(sec/60),s=Math.floor(sec%60);
+  return m+'分'+(s<10?'0':'')+s+'秒';
+}
+function makeClock(el){
+  var run=0,last=null,iv=null;
+  function tick(){
+    if(last!==null){run+=Date.now()-last;last=Date.now()}
+    if(el)el.textContent=fmtTime(Math.floor(run/1000));
+  }
+  return{
+    start:function(){if(iv)return;last=Date.now();iv=setInterval(tick,500);tick()},
+    stop:function(){if(iv){clearInterval(iv);iv=null}last=null},
+    pause:function(){if(last!==null){run+=Date.now()-last;last=null}},
+    resume:function(){if(last===null)last=Date.now()},
+    elapsed:function(){return run+(last!==null?(Date.now()-last):0)}
+  };
+}
+
+/* ---- 难度自适应：最近5题平均≥80%升一级、<60%降一级；连错3次提示并降级 ---- */
+function makeEngine(key,maxLv,names){
+  var st=store.get(key,{lv:1,hist:[],streak:0});
+  function save(){store.set(key,st)}
+  return{
+    get lv(){return st.lv},
+    get name(){return names[st.lv-1]},
+    answer:function(score){
+      st.hist.push(score);if(st.hist.length>5)st.hist.shift();
+      var delta=0;
+      if(st.hist.length>=3){
+        var avg=0;for(var i=0;i<st.hist.length;i++)avg+=st.hist[i];
+        avg/=st.hist.length;
+        if(avg>=0.8)delta=1;else if(avg<0.6)delta=-1;
+      }
+      if(score<0.5)st.streak++;else st.streak=0;
+      var hint=false;
+      if(st.streak>=3){hint=true;delta=-1;st.streak=0}
+      if(delta>0&&st.lv<maxLv)st.lv++;
+      else if(delta<0&&st.lv>1)st.lv--;
+      save();return{delta:delta,hint:hint};
+    }
+  };
+}
+
+/* ---- 一次训练会话：边玩边保存，记录只存在本机 ---- */
+function makeSession(game,clock){
+  var S={sid:Date.now()+'-'+Math.floor(Math.random()*1e4),game:game,q:0,scoreSum:0,correct:0,rtSum:0,rtN:0,notes:[],lvName:''};
+  return{
+    push:function(score,rt,note,lvName){
+      S.q++;S.scoreSum+=score;
+      if(score>=0.8)S.correct++;
+      if(rt>0){S.rtSum+=rt;S.rtN++}
+      if(note)S.notes.push(note);
+      if(lvName)S.lvName=lvName;
+      this.save();
+    },
+    save:function(){
+      if(S.q<1)return;
+      upsertRecord({
+        sid:S.sid,t:new Date().toISOString(),game:S.game,levelName:S.lvName,
+        questions:S.q,correct:S.correct,acc:Math.round(100*S.scoreSum/S.q),
+        avgRT:S.rtN?+(S.rtSum/S.rtN).toFixed(1):-1,
+        dur:Math.max(1,Math.round(clock.elapsed()/1000)),
+        note:S.notes.slice(-4).join('；')
+      });
+    },
+    get q(){return S.q}
+  };
+}
+
+/* ---- 确认对话框 ---- */
+var askYes=null;
+function askModal(text,cb){
+  document.getElementById('askText').textContent=text;
+  askYes=cb;document.getElementById('askMask').classList.add('show');
+}
+document.getElementById('askYes').onclick=function(){
+  document.getElementById('askMask').classList.remove('show');
+  if(askYes){var f=askYes;askYes=null;f()}
+};
+document.getElementById('askNo').onclick=function(){document.getElementById('askMask').classList.remove('show');askYes=null};
+
+/* ============================================================
+   游戏部分：《记住购物清单》
+   ============================================================ */
+
+/* 物品库：44 种中国老人熟悉的日常用品和食品（Emoji + 文字） */
+var ITEMS=[
+  {e:'🍎',n:'苹果'},{e:'🍌',n:'香蕉'},{e:'🍊',n:'橘子'},{e:'🍉',n:'西瓜'},
+  {e:'🍇',n:'葡萄'},{e:'🍑',n:'桃子'},{e:'🍐',n:'梨'},{e:'🥛',n:'牛奶'},
+  {e:'🥚',n:'鸡蛋'},{e:'🐟',n:'鲜鱼'},{e:'🍗',n:'鸡肉'},{e:'🥩',n:'牛肉'},
+  {e:'🍚',n:'大米'},{e:'🍜',n:'面条'},{e:'🍞',n:'面包'},{e:'🍪',n:'饼干'},
+  {e:'🍰',n:'蛋糕'},{e:'🍬',n:'糖果'},{e:'🍵',n:'茶叶'},{e:'🧂',n:'食盐'},
+  {e:'🥔',n:'土豆'},{e:'🍅',n:'西红柿'},{e:'🥕',n:'胡萝卜'},{e:'🌽',n:'玉米'},
+  {e:'🥦',n:'西兰花'},{e:'🧅',n:'洋葱'},{e:'🧄',n:'大蒜'},{e:'🍄',n:'蘑菇'},
+  {e:'🥬',n:'青菜'},{e:'🔑',n:'钥匙'},{e:'☂️',n:'雨伞'},{e:'👟',n:'鞋子'},
+  {e:'👒',n:'帽子'},{e:'👓',n:'眼镜'},{e:'📰',n:'报纸'},{e:'📱',n:'手机'},
+  {e:'⌚',n:'手表'},{e:'✂️',n:'剪刀'},{e:'🧤',n:'手套'},{e:'🧣',n:'围巾'},
+  {e:'👜',n:'提包'},{e:'🧼',n:'肥皂'},{e:'🥢',n:'筷子'},{e:'📖',n:'图书'}
+];
+
+/* 各难度：要记的物品数 / 候选项总数 */
+var CFG=[{t:2,c:4},{t:3,c:6},{t:4,c:8},{t:5,c:10}];
+var LV_NAMES=['简单','中等','较难','挑战'];
+var TOTAL=8;                             /* 每轮 8 题 */
+var VIEW_SEC=8000;                       /* 清单显示 8 秒 */
+
+var engine=makeEngine('ctt_state_3',4,LV_NAMES);
+var timeEl=document.getElementById('stTime');
+var clock=makeClock(timeEl);
+var session=makeSession('记住购物清单',clock);
+
+var qNo=0,targets=[],candidates=[],selected={},goMs=0,lastKey='';
+/* 本轮汇总 */
+var totTargets=0,totHits=0,totMiss=0,totExtra=0;
+
+var $=function(id){return document.getElementById(id)};
+var sec1=$('phase1'),sec2=$('phase2'),secFB=$('phaseFB'),sumPanel=$('sumPanel');
+
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function updateChips(){
+  $('stLevel').textContent=engine.name;
+  $('stQ').textContent=qNo+' / '+TOTAL;
+}
+
+/* 生成一题：目标物品 + 干扰物品，避免和上一题完全相同 */
+function genQuestion(){
+  var cfg=CFG[engine.lv-1],key='';
+  do{
+    targets=shuffle(ITEMS.slice()).slice(0,cfg.t);
+    key=targets.map(function(x){return x.n}).sort().join(',');
+  }while(key===lastKey);
+  lastKey=key;
+  var rest=ITEMS.filter(function(x){return targets.indexOf(x)<0});
+  candidates=shuffle(targets.concat(shuffle(rest).slice(0,cfg.c-cfg.t)));
+}
+
+/* ---- 第一阶段：显示清单 8 秒 ---- */
+function showPhase1(){
+  genQuestion();
+  selected={};
+  updateChips();
+  var html='';
+  targets.forEach(function(x){
+    html+='<div class="lrow"><span class="le">'+x.e+'</span><span class="ln">'+x.n+'</span></div>';
+  });
+  $('listBox').innerHTML=html;
+  /* 重新触发进度条动画 */
+  var fill=$('pfill');fill.style.animation='none';void fill.offsetWidth;fill.style.animation='';
+  sec1.hidden=false;sec2.hidden=true;secFB.hidden=true;sumPanel.hidden=true;
+  later(VIEW_SEC,showPhase2);
+}
+
+/* ---- 第二阶段：挑选 ---- */
+function showPhase2(){
+  sec1.hidden=true;sec2.hidden=false;
+  var g=$('grid');g.innerHTML='';
+  candidates.forEach(function(x){
+    var b=document.createElement('button');
+    b.type='button';
+    b.className='item';
+    b.innerHTML='<span class="tick">✔</span><span class="ie">'+x.e+'</span><span class="in">'+x.n+'</span>';
+    b.onclick=function(){
+      if(paused)return;
+      b.classList.toggle('sel');
+      selected[x.n]=b.classList.contains('sel');
+      $('btnDone').disabled=!Object.keys(selected).some(function(k){return selected[k]});
+    };
+    g.appendChild(b);
+  });
+  $('btnDone').disabled=true;
+  goMs=clock.elapsed();
+}
+
+/* ---- 提交答案 ---- */
+function submit(){
+  if(paused)return;
+  var hits=0,miss=0,extra=0;
+  targets.forEach(function(x){if(selected[x.n])hits++;else miss++});
+  candidates.forEach(function(x){
+    if(targets.indexOf(x)<0&&selected[x.n])extra++;
+  });
+  var rt=(clock.elapsed()-goMs)/1000;
+  var score=Math.max(0,(hits-extra)/targets.length);
+  var res=engine.answer(score);
+  totTargets+=targets.length;totHits+=hits;totMiss+=miss;totExtra+=extra;
+  session.push(score,rt,'记'+targets.length+'件/中'+hits+'/漏'+miss+'/多'+extra,engine.name);
+
+  /* 渲染带批改的网格 */
+  var g=$('gridFB');g.innerHTML='';
+  candidates.forEach(function(x){
+    var isT=targets.indexOf(x)>=0,picked=!!selected[x.n],cls='',badge='';
+    if(isT&&picked){cls='hit';badge='找对了 ✔'}
+    else if(isT&&!picked){cls='miss';badge='在清单里'}
+    else if(!isT&&picked){cls='extra';badge='不在清单里'}
+    var d=document.createElement('div');
+    d.className='item '+cls;
+    d.innerHTML='<span class="ie">'+x.e+'</span><span class="in">'+x.n+'</span><span class="badge">'+badge+'</span>';
+    g.appendChild(d);
+  });
+
+  var fb=$('fb');
+  if(miss===0&&extra===0){
+    fb.className='fb show ok';fb.textContent='全部记住了，真好！👍';
+  }else{
+    fb.className='fb show warn';
+    fb.textContent='您找对了 '+hits+' 件，还有 '+miss+' 件在清单里没选到，选多了 '+extra+' 件。没关系，下一题再来。';
+  }
+  if(res.hint){
+    fb.textContent+=' 我们把难度放低一点，慢慢来。小窍门：看清单时可以在心里念一遍。';
+  }
+  sec2.hidden=true;secFB.hidden=false;
+  $('btnNext').textContent=qNo>=TOTAL?'查看小结':'下一题';
+}
+
+function next(){
+  if(qNo>=TOTAL)showSummary();else startQuestion();
+}
+function startQuestion(){
+  qNo++;updateChips();
+  showPhase1();
+}
+
+/* ---- 本轮小结 ---- */
+function showSummary(){
+  sec1.hidden=true;sec2.hidden=true;secFB.hidden=true;sumPanel.hidden=false;
+  var accT=totTargets?Math.round(100*totHits/totTargets):0;
+  $('sumGrid').innerHTML=
+    '<div class="sumbox"><div class="v">'+session.q+'</div><div class="k">完成题数</div></div>'
+   +'<div class="sumbox"><div class="v">'+totHits+' / '+totTargets+'</div><div class="k">记住的物品</div></div>'
+   +'<div class="sumbox"><div class="v">'+accT+'%</div><div class="k">选中率</div></div>'
+   +'<div class="sumbox"><div class="v">'+totMiss+'</div><div class="k">漏选</div></div>'
+   +'<div class="sumbox"><div class="v">'+totExtra+'</div><div class="k">误选</div></div>'
+   +'<div class="sumbox"><div class="v">'+fmtTime(Math.floor(clock.elapsed()/1000))+'</div><div class="k">训练时长</div></div>';
+  $('sumTip').textContent=accT>=80?'记得又准又稳，做得很好！':'坚持完成就是进步，休息一下再练也可以。';
+}
+
+/* ================= 按钮事件 ================= */
+$('btnDone').onclick=submit;
+$('btnNext').onclick=next;
+$('btnAgain').onclick=function(){
+  clock.stop();clock=makeClock(timeEl);clock.start();
+  session=makeSession('记住购物清单',clock);
+  qNo=0;totTargets=0;totHits=0;totMiss=0;totExtra=0;lastKey='';
+  startQuestion();
+};
+
+$('btnPause').onclick=function(){
+  if(paused)return;
+  paused=true;pauseTimers();clock.pause();
+  document.body.classList.add('paused');
+  $('pauseMask').classList.add('show');
+};
+$('btnResume').onclick=function(){
+  paused=false;resumeTimers();clock.resume();
+  document.body.classList.remove('paused');
+  $('pauseMask').classList.remove('show');
+};
+$('btnRestart').onclick=function(){
+  askModal('要重新开始吗？本题会从头再来。',function(){
+    clock.stop();clock=makeClock(timeEl);clock.start();
+    session=makeSession('记住购物清单',clock);
+    qNo=0;totTargets=0;totHits=0;totMiss=0;totExtra=0;lastKey='';
+    startQuestion();
+  });
+};
+$('btnHome').onclick=$('btnHome2').onclick=function(){
+  session.save();
+  location.href='index.html';
+};
+
+/* ================= 启动 ================= */
+clock.start();
+startQuestion();
+</script>
+</body>
+</html>
