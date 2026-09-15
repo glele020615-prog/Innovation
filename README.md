@@ -4,7 +4,7 @@
 > 本项目是一个基于 PySide6 的桌面应用程序，用于阿尔茨海默症（AD）/ 轻度认知障碍（MCI）的辅助诊断与进展风险预测。核心算法为 **SA-STGCN（Self-Attention Spatio-Temporal Graph Convolutional Network，自注意力时空图卷积网络）**，以静息态 fMRI 数据为输入，输出患病风险及可解释分析。
 
 ---
-![alt text|20](new_icon.png)
+<img src="new_icon.png" alt="alt text" width="200">
 
 ## 一、总体架构
 
