@@ -6,6 +6,17 @@
 ---
 <img src="new_icon.png" alt="alt text" width="200">
 
+<div align="center">
+<img src="软件登录界面.png" alt="软件登录界面" width="200">
+<img src="医生端.png" alt="医生端" width="200">
+<img src="患者端.png" alt="患者端" width="200">
+</div>
+<div align="center">
+<img src="agent.png" alt="医生端Agent" width="200">
+<img src="医生端.png" alt="患者端智能问答助手" width="200">
+</div>
+
+
 ## 一、总体架构
 
 程序启动后先进入**登录窗口**（`login_window.py`），账号密码校验通过后按角色分发到两个独立界面（退出登录均可回到登录界面）：
