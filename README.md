@@ -7,9 +7,9 @@
 <img src="new_icon.png" alt="alt text" width="200">
 
 <div align="center">
-<img src="软件登录界面.png" alt="软件登录界面" width="400">
-<img src="医生端.png" alt="医生端" width="400">
-<img src="患者端.png" alt="患者端" width="400">
+<img src="软件登录界面.png" alt="软件登录界面" width="350">
+<img src="医生端.png" alt="医生端" width="350">
+<img src="患者端.png" alt="患者端" width="350">
 </div>
 <div align="center">
 <img src="agent.png" alt="医生端Agent" width="500">
