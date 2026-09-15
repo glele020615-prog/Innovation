@@ -7,13 +7,13 @@
 <img src="new_icon.png" alt="alt text" width="200">
 
 <div align="center">
-<img src="软件登录界面.png" alt="软件登录界面" width="200">
-<img src="医生端.png" alt="医生端" width="200">
-<img src="患者端.png" alt="患者端" width="200">
+<img src="软件登录界面.png" alt="软件登录界面">
+<img src="医生端.png" alt="医生端">
+<img src="患者端.png" alt="患者端">
 </div>
 <div align="center">
-<img src="agent.png" alt="医生端Agent" width="200">
-<img src="医生端.png" alt="患者端智能问答助手" width="200">
+<img src="agent.png" alt="医生端Agent">
+<img src="问答助手.png" alt="患者端智能问答助手">
 </div>
 
 
