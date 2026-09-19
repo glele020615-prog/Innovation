@@ -131,7 +131,7 @@
 
 #### `predict.py` — 诊断预测页面
 - **作用**：定义 `DiagnosisPage` 类，加载训练好的 SA-STGCN 模型，对提取的特征进行推理，输出：
-  - 患病风险概率 / 分类结果（如 pMCI / sMCI / AD / NC）
+  - 患病风险概率 / 分类结果（如 pMCI / sMCI）
   - 关键脑区与可解释分析
 - **使用**：第 4 个标签页，`from predict import DiagnosisPage`。推理结果通过主窗口 `open_individual_report(case_data)` 传递并跳转。
 
